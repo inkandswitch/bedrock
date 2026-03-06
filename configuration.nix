@@ -1,6 +1,6 @@
 { config, lib, pkgs, hostname, ... }:
   let
-    publicHostname = "bedrock.subduction.keyhive.org";
+    publicHostname = "subduction.sync.inkandswitch.com";
   in {
     networking.hostName = hostname;
     networking.firewall = {
