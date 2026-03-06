@@ -1,0 +1,63 @@
+{
+  description = "bedrock — DigitalOcean NixOS droplet with Subduction sync server";
+
+  inputs = {
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
+
+    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+
+    subduction.url = "github:inkandswitch/subduction";
+    subduction.inputs.nixpkgs.follows = "nixpkgs";
+
+    unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  };
+
+  outputs = { self, nixpkgs, unstable, disko, home-manager, subduction, ... }:
+    let
+      system   = "x86_64-linux";
+      hostname = "bedrock";
+      username = "expede";
+
+      unstablePkgs = import unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    in {
+      nixosConfigurations.${hostname} = nixpkgs.lib.nixosSystem {
+        inherit system;
+
+        specialArgs = {
+          inherit hostname username;
+          unstable = unstablePkgs;
+        };
+
+        modules = [
+          disko.nixosModules.disko
+          home-manager.nixosModules.home-manager
+          subduction.nixosModules.default
+
+          ./disk-config.nix
+          ./hardware-configuration.nix
+          ./configuration.nix
+          ./nix.nix
+
+          {
+            home-manager = {
+              useGlobalPkgs   = true;
+              useUserPackages = true;
+              backupFileExtension = "backup";
+              users.${username} = import ./home.nix;
+              extraSpecialArgs = {
+                inherit hostname username;
+                isServer = true;
+              };
+            };
+          }
+        ];
+      };
+    };
+}
