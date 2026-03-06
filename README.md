@@ -30,7 +30,7 @@ Loki. Tailscale provides a mesh VPN overlay for administrative access.
 ## Files
 
 | File                         | Purpose                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+|------------------------------|--------------------------------------------------------------------------------------------------|
 | `flake.nix`                  | Flake entry point — pins nixpkgs, disko, home-manager, and subduction                            |
 | `configuration.nix`          | System services: Subduction, Caddy, Prometheus, Loki, Grafana Alloy, Grafana, Tailscale, OpenSSH |
 | `disk-config.nix`            | Disko partition layout (BIOS boot + ext4 root on `/dev/vda`)                                     |
@@ -55,19 +55,36 @@ nix run github:nix-community/nixos-anywhere -- \
 ### Post-install: provision subduction key
 
 ```bash
-ssh expede@bedrock.subduction.keyhive.org
+ssh <USERNAME>@bedrock.subduction.keyhive.org
 sudo mkdir -p /var/lib/subduction
 sudo dd if=/dev/urandom bs=32 count=1 of=/var/lib/subduction/key-seed
 sudo chmod 600 /var/lib/subduction/key-seed
 sudo systemctl restart subduction
 ```
 
-### Subsequent rebuilds
+### Updating the configuration
+
+`nixos-anywhere` is only for the initial install (it wipes the disk).
+For ongoing changes, edit the nix files locally and use `nixos-rebuild`
+to apply them over SSH:
 
 ```bash
 nixos-rebuild switch --flake .#bedrock \
-  --target-host expede@bedrock.subduction.keyhive.org
+  --target-host <USERNAME>@bedrock.subduction.keyhive.org \
+  --build-host <USERNAME>@bedrock.subduction.keyhive.org
 ```
+
+> [!NOTE]
+> `--build-host` builds the closure on the remote (required when the
+> local machine can't produce `x86_64-linux` derivations, e.g. from
+> Apple Silicon). Omit it if you have a remote builder or cross-compilation
+> set up locally.
+
+| Mode     | Behaviour                                                             |
+| -------- | --------------------------------------------------------------------- |
+| `switch` | Build, activate now, add to bootloader                                |
+| `test`   | Build and activate now, _don't_ add to bootloader (reverts on reboot) |
+| `boot`   | Add to bootloader but don't activate until next reboot                |
 
 ## Services
 
