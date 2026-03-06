@@ -2,6 +2,9 @@
   let
     publicHostname = "bedrock.subduction.keyhive.org";
   in {
+    # Serial console for DigitalOcean web console access
+    boot.kernelParams = [ "console=ttyS0,115200n8" ];
+
     networking.hostName = hostname;
     networking.firewall = {
       enable = true;
