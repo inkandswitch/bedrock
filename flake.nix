@@ -40,9 +40,10 @@
           home-manager.nixosModules.home-manager
           subduction.nixosModules.default
 
+          ./configuration.nix
+          ./digitalocean.nix
           ./disk-config.nix
           ./hardware-configuration.nix
-          ./configuration.nix
           ./nix.nix
 
           {

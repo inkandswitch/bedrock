@@ -1,32 +1,22 @@
-# Hardware profile for a DigitalOcean droplet (KVM/QEMU guest).
+# Hardware configuration for a DigitalOcean droplet.
 #
-# DO droplets use virtio for block and network devices.
-# The qemu-guest profile pulls in virtio kernel modules automatically.
-#
-# Note: fileSystems are managed by disko (disk-config.nix) and do not
-# need to be declared here. If nixos-generate-config was run on the
-# live droplet, merge any additional detected modules into the lists below.
-{ modulesPath, ... }:
+# The DO platform module (digitalocean.nix) imports qemu-guest.nix and
+# sets up virtio + GRUB + serial console. This file adds any extra
+# kernel modules detected on the live hardware. fileSystems are managed
+# by disko (disk-config.nix).
+{ lib, ... }:
 {
-  imports = [
-    (modulesPath + "/profiles/qemu-guest.nix")
-  ];
-
   boot.loader.grub = {
-    enable  = true;
-    # disko manages the device via EF02 partition; no explicit device needed
-    # but nixos-anywhere may override this.
+    enable = true;
+    # digital-ocean-config.nix and disko both add /dev/vda, causing a
+    # "duplicated devices in mirroredBoots" error. Force a single entry.
+    devices = lib.mkForce [ "/dev/vda" ];
   };
 
   boot.initrd.availableKernelModules = [
     "ata_piix"
     "uhci_hcd"
     "virtio_blk"
-    "virtio_pci"
-    "virtio_scsi"
     "xen_blkfront"
   ];
-
-  boot.initrd.kernelModules = [ "virtio_gpu" ];
-  boot.kernelModules        = [ "kvm-intel" ];
 }
