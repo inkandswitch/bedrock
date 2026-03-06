@@ -1,0 +1,89 @@
+# Bedrock
+
+NixOS configuration for a DigitalOcean droplet running a
+[Subduction](https://github.com/inkandswitch/subduction) sync server
+with full observability.
+
+## Architecture
+
+```mermaid
+graph TD
+    Internet -->|":80 / :443"| Caddy["Caddy (TLS)"]
+
+    Caddy -->|bedrock.subduction…| Subduction[":8080 — Subduction"]
+    Caddy -->|dashboard.bedrock.…| Grafana[":3939 — Grafana"]
+
+    Subduction -->|":9090 metrics"| Prometheus[":9092 — Prometheus"]
+    Prometheus -.-> Grafana
+
+    Alloy["Grafana Alloy"] -->|push| Loki[":3100 — Loki"]
+    Alloy -.-|systemd journal| Journal(("journal"))
+    Alloy -.-|file tail| SubLogs[("/var/log/subduction/*.log")]
+    Loki -.-> Grafana
+```
+
+Caddy terminates TLS via Let's Encrypt and reverse-proxies to
+Subduction and Grafana. Prometheus scrapes Subduction metrics.
+Grafana Alloy ships the systemd journal and Subduction log files to
+Loki. Tailscale provides a mesh VPN overlay for administrative access.
+
+## Files
+
+| File                         | Purpose                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `flake.nix`                  | Flake entry point — pins nixpkgs, disko, home-manager, and subduction                            |
+| `configuration.nix`          | System services: Subduction, Caddy, Prometheus, Loki, Grafana Alloy, Grafana, Tailscale, OpenSSH |
+| `disk-config.nix`            | Disko partition layout (BIOS boot + ext4 root on `/dev/vda`)                                     |
+| `hardware-configuration.nix` | DigitalOcean / QEMU guest hardware profile and virtio modules                                    |
+| `home.nix`                   | Minimal home-manager config (fish, starship, git, iroh, ripgrep)                                 |
+| `nix.nix`                    | Nix daemon settings (flakes, GC, trusted substituters)                                           |
+
+## Deploying
+
+### Initial provisioning
+
+Create a DigitalOcean droplet (Ubuntu 24.04, SSH key added), point
+`bedrock.subduction.keyhive.org` DNS at its IP, then provision with
+[nixos-anywhere](https://github.com/nix-community/nixos-anywhere):
+
+```bash
+nix run github:nix-community/nixos-anywhere -- \
+  --flake .#bedrock \
+  root@<droplet-ip>
+```
+
+### Post-install: provision subduction key
+
+```bash
+ssh expede@bedrock.subduction.keyhive.org
+sudo mkdir -p /var/lib/subduction
+sudo dd if=/dev/urandom bs=32 count=1 of=/var/lib/subduction/key-seed
+sudo chmod 600 /var/lib/subduction/key-seed
+sudo systemctl restart subduction
+```
+
+### Subsequent rebuilds
+
+```bash
+nixos-rebuild switch --flake .#bedrock \
+  --target-host expede@bedrock.subduction.keyhive.org
+```
+
+## Services
+
+| Service       | Listen Address   | Notes                                                 |
+| ------------- | ---------------- | ----------------------------------------------------- |
+| Subduction    | `127.0.0.1:8080` | Sync server; key at `/var/lib/subduction/key-seed`    |
+| Caddy         | `:80`, `:443`    | Automatic TLS via Let's Encrypt                       |
+| Grafana       | `127.0.0.1:3939` | Exposed at `dashboard.bedrock.subduction.keyhive.org` |
+| Prometheus    | `:9092`          | Scrapes Subduction metrics on `:9090`                 |
+| Loki          | `:3100`          | Log aggregation (TSDB, 14-day retention)              |
+| Grafana Alloy | —                | Ships journal + `/var/log/subduction/*.log` to Loki   |
+| Tailscale     | —                | Mesh VPN for admin access                             |
+| OpenSSH       | `:22`            | Key-only, root login disabled                         |
+
+## Firewall
+
+Only ports **22**, **80**, and **443** are open. All other services
+(Grafana, Prometheus, Loki) bind to localhost and are reachable
+through Caddy or Tailscale.
