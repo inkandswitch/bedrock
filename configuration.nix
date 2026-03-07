@@ -38,7 +38,6 @@
     programs.ssh.startAgent = true;
 
     services = {
-
       openssh = {
         enable = true;
         settings = {
@@ -218,6 +217,10 @@
         forward_to = [loki.write.local.receiver]
       }
     '';
+
+    # Subduction syncs many sedimentrees concurrently; raise fd limit to
+    # avoid "Too many open files" under heavy publish-all workloads.
+    systemd.services.subduction.serviceConfig.LimitNOFILE = 1048576;
 
     systemd.services.alloy.serviceConfig.ReadOnlyPaths =
       [ "/var/log/subduction" ];
