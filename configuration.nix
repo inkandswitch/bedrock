@@ -79,8 +79,9 @@
         port   = 9092;
 
         scrapeConfigs = [{
-          job_name = "subduction";
-          static_configs = [{
+          job_name        = "subduction";
+          scrape_interval = "15s";
+          static_configs  = [{
             targets = [ "localhost:9090" ];
             labels.instance = "local";
           }];
@@ -205,6 +206,15 @@
           source_labels = ["__journal__systemd_unit"]
           target_label  = "unit"
         }
+
+        // Map subduction.service → service="subduction" so the
+        // provisioned Grafana dashboard query {service="subduction"} works.
+        rule {
+          source_labels = ["__journal__systemd_unit"]
+          regex         = "subduction\\.service"
+          target_label  = "service"
+          replacement   = "subduction"
+        }
       }
 
       // ── Subduction log files ───────────────────────────────────────────
@@ -214,7 +224,21 @@
 
       loki.source.file "subduction" {
         targets    = local.file_match.subduction_logs.targets
+        forward_to = [loki.relabel.subduction_files.receiver]
+      }
+
+      loki.relabel "subduction_files" {
         forward_to = [loki.write.local.receiver]
+
+        rule {
+          target_label = "service"
+          replacement  = "subduction"
+        }
+
+        rule {
+          target_label = "job"
+          replacement  = "subduction-logs"
+        }
       }
     '';
 
