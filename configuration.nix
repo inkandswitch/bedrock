@@ -180,7 +180,7 @@
       };
     };
 
-    # Alloy config: scrape systemd journal + subduction log files → Loki
+    # Alloy config: scrape systemd journal → Loki
     environment.etc."alloy/config.alloy".text = ''
       // ── Loki sink ──────────────────────────────────────────────────────
       loki.write "local" {
@@ -189,26 +189,19 @@
         }
       }
 
-      // ── Systemd journal ────────────────────────────────────────────────
-      loki.source.journal "journal" {
-        forward_to = [loki.relabel.journal.receiver]
-        max_age    = "12h"
-        labels     = {
-          job  = "systemd-journal",
-          host = "${hostname}",
-        }
-      }
-
+      // ── Relabel rules (applied inside the journal source) ─────────────
+      // Must be a separate component so that loki.source.journal can
+      // reference its `.rules` export.  The __journal_* internal labels
+      // are only visible when applied via `relabel_rules`; they are
+      // stripped before reaching a downstream loki.relabel receiver.
       loki.relabel "journal" {
-        forward_to = [loki.write.local.receiver]
+        forward_to = []
 
         rule {
           source_labels = ["__journal__systemd_unit"]
           target_label  = "unit"
         }
 
-        // Map subduction.service → service="subduction" so the
-        // provisioned Grafana dashboard query {service="subduction"} works.
         rule {
           source_labels = ["__journal__systemd_unit"]
           regex         = "subduction\\.service"
@@ -217,37 +210,38 @@
         }
       }
 
-      // ── Subduction log files ───────────────────────────────────────────
-      local.file_match "subduction_logs" {
-        path_targets = [{"__path__" = "/var/log/subduction/*.log"}]
-      }
-
-      loki.source.file "subduction" {
-        targets    = local.file_match.subduction_logs.targets
-        forward_to = [loki.relabel.subduction_files.receiver]
-      }
-
-      loki.relabel "subduction_files" {
-        forward_to = [loki.write.local.receiver]
-
-        rule {
-          target_label = "service"
-          replacement  = "subduction"
-        }
-
-        rule {
-          target_label = "job"
-          replacement  = "subduction-logs"
+      // ── Systemd journal ────────────────────────────────────────────────
+      loki.source.journal "journal" {
+        forward_to    = [loki.write.local.receiver]
+        relabel_rules = loki.relabel.journal.rules
+        max_age       = "12h"
+        labels        = {
+          job  = "systemd-journal",
+          host = "${hostname}",
         }
       }
     '';
 
-    # Subduction syncs many sedimentrees concurrently; raise fd limit to
-    # avoid "Too many open files" under heavy publish-all workloads.
-    systemd.services.subduction.serviceConfig.LimitNOFILE = 1048576;
+    systemd.services.subduction.serviceConfig = {
+      # Generate the signing-key seed on first boot so the server can start
+      # without manual intervention.  The "+" prefix runs the script as
+      # root (outside the service sandbox) so chown works.  Idempotent:
+      # an existing key-seed is never overwritten.
+      ExecStartPre = let
+        keySeed = "/var/lib/subduction/key-seed";
+        script = pkgs.writeShellScript "ensure-subduction-key" ''
+          if [ ! -f "${keySeed}" ]; then
+            ${pkgs.coreutils}/bin/dd if=/dev/urandom bs=32 count=1 of="${keySeed}" 2>/dev/null
+            ${pkgs.coreutils}/bin/chmod 0400 "${keySeed}"
+            ${pkgs.coreutils}/bin/chown subduction:subduction "${keySeed}"
+          fi
+        '';
+      in "+${script}";
 
-    systemd.services.alloy.serviceConfig.ReadOnlyPaths =
-      [ "/var/log/subduction" ];
+      # Subduction syncs many sedimentrees concurrently; raise fd limit to
+      # avoid "Too many open files" under heavy publish-all workloads.
+      LimitNOFILE = 1048576;
+    };
 
     environment.systemPackages = with pkgs; [
       curl
