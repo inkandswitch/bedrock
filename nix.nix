@@ -19,6 +19,7 @@
         "https://cache.nixos.org"
       ];
 
+      download-buffer-size = 268435456; # 256 MiB
       experimental-features = [ "flakes" "nix-command" ];
     };
   };
