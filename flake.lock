@@ -182,11 +182,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1773603925,
-        "narHash": "sha256-FaGP6wgApdjcKieYJWVlOBSomeXxDP1cZC7K6i1RUDU=",
+        "lastModified": 1773605052,
+        "narHash": "sha256-WMwM7SAEJd6ojtRDXLo3NN2z2/ClbxzKS33in/RyWuY=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "c44279d84c87c3e7bb52df10ee5bb6c5458c7f84",
+        "rev": "a563c06c8263be68413681f3fb89c1fa4162e065",
         "type": "github"
       },
       "original": {
