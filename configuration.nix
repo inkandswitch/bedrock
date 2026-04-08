@@ -241,6 +241,7 @@
       # Subduction syncs many sedimentrees concurrently; raise fd limit to
       # avoid "Too many open files" under heavy publish-all workloads.
       LimitNOFILE = 1048576;
+      Environment = "RUST_LOG=subduction=info";
     };
 
     environment.systemPackages = with pkgs; [
