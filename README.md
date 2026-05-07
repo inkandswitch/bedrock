@@ -105,3 +105,10 @@ nixos-rebuild switch --flake .#bedrock \
 Only ports **22**, **80**, and **443** are open. All other services
 (Grafana, Prometheus, Loki) bind to localhost and are reachable
 through Caddy or Tailscale.
+
+## Day-to-day operations
+
+See [`OPERATIONS.md`](./OPERATIONS.md) for a cookbook of common
+on-server tasks: tailing logs, filtering by severity, restarting
+Subduction, checking disk and inode pressure, inspecting on-disk
+state, and the gotchas that come up most often.
