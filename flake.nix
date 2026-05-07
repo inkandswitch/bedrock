@@ -18,9 +18,9 @@
 
   outputs = { self, nixpkgs, unstable, disko, home-manager, subduction, ... }:
     let
-      system   = "x86_64-linux";
-      hostname = "bedrock";
-      username = "expede";
+      system        = "x86_64-linux";
+      hostname      = "bedrock";
+      adminUsername = "expede";
 
       unstablePkgs = import unstable {
         inherit system;
@@ -31,7 +31,7 @@
         inherit system;
 
         specialArgs = {
-          inherit hostname username;
+          inherit hostname adminUsername;
           unstable = unstablePkgs;
         };
 
@@ -45,19 +45,6 @@
           ./disk-config.nix
           ./hardware-configuration.nix
           ./nix.nix
-
-          {
-            home-manager = {
-              useGlobalPkgs   = true;
-              useUserPackages = true;
-              backupFileExtension = "backup";
-              users.${username} = import ./home.nix;
-              extraSpecialArgs = {
-                inherit hostname username;
-                isServer = true;
-              };
-            };
-          }
         ];
       };
     };

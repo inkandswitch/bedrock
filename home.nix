@@ -1,5 +1,16 @@
 # Minimal home-manager configuration for a headless server.
-{ pkgs, username, ... }:
+#
+# Per-user values are passed in via `_module.args` on each user's
+# home-manager submodule (set in configuration.nix).  We can't use the
+# global `home-manager.extraSpecialArgs` for these because it's shared
+# across every user.
+#
+# Required module args:
+#   username : Unix login name           (e.g. "expede")
+#   fullName : Git author name           (e.g. "Brooklyn Zelenka")
+#   email    : Git author email
+#   shell    : "fish" or "zsh"
+{ pkgs, username, fullName, email, shell, ... }:
 {
   home = {
     inherit username;
@@ -14,14 +25,15 @@
   };
 
   programs = {
-    fish.enable     = true;
+    fish.enable     = shell == "fish";
+    zsh.enable      = shell == "zsh";
     starship.enable = true;
 
     git = {
       enable = true;
       settings.user = {
-        name  = "Brooklyn Zelenka";
-        email = "brooklyn@inkandswitch.com";
+        name  = fullName;
+        email = email;
       };
     };
   };
