@@ -25,6 +25,8 @@ For deploying changes from your laptop, see the
 | Count synced trees                    | `sudo ls /var/lib/subduction/trees \| wc -l`                                              |
 | CPU / memory snapshot                 | `btop`                                                                                    |
 | Apply a config change pulled from git | `sudo nixos-rebuild switch --flake .#bedrock`                                             |
+| Bump Subduction to a new version      | `nix flake update subduction` then `nixos-rebuild switch` (see [Updating](#updating-the-server)) |
+| Roll back the last deploy             | `sudo nixos-rebuild switch --rollback`                                                    |
 
 > [!NOTE]
 > The unit is **`subduction`**, not `subduction_cli`. There is no
@@ -184,6 +186,119 @@ Other modes:
 If a deploy goes wrong, the previous generation is still in the bootloader:
 reboot and pick it from the menu, or roll back from a working session with
 `sudo nixos-rebuild switch --rollback`.
+
+## Updating the server
+
+Two things can be "updated" independently: the **flake inputs**
+(Subduction, nixpkgs, etc.) and the **NixOS system itself** (rebuilding
+against whatever the inputs currently point at). Most of the time you
+want both, in order.
+
+### 1. Bump flake inputs
+
+From a checkout of this repo (laptop _or_ on the server):
+
+```sh
+nix flake update                    # update every input
+nix flake update subduction         # bump just Subduction
+nix flake update nixpkgs unstable   # bump just nixpkgs channels
+```
+
+This rewrites `flake.lock`. _Review the diff_ before deploying:
+
+```sh
+git diff flake.lock
+```
+
+Pinning Subduction to a specific tag is done by editing `flake.nix`:
+
+```nix
+subduction.url = "github:inkandswitch/subduction/v0.14.0-nightly.2026-05-07";
+```
+
+…then `nix flake update subduction` to refresh the lock.
+
+> [!NOTE]
+> Stable releases are published as `vX.Y.Z` tags; nightlies are
+> `vX.Y.Z-nightly.YYYY-MM-DD`. The
+> [releases page](https://github.com/inkandswitch/subduction/releases)
+> marks one tag as "Latest" — that's the latest _stable_, not the
+> latest tag overall.
+
+### 2. Rebuild and activate
+
+#### From your laptop (preferred)
+
+```sh
+nixos-rebuild switch --flake .#bedrock \
+  --target-host <USERNAME>@subduction.sync.inkandswitch.com \
+  --build-host <USERNAME>@subduction.sync.inkandswitch.com
+```
+
+`--build-host` builds the closure on the droplet itself, which is
+required when your laptop can't produce `x86_64-linux` derivations
+(e.g. from Apple Silicon).
+
+#### On the server
+
+```sh
+cd ~/bedrock
+git pull                               # if the lockfile bump was committed
+sudo nixos-rebuild switch --flake .#bedrock
+```
+
+For a dry run that builds without activating:
+
+```sh
+sudo nixos-rebuild build --flake .#bedrock
+```
+
+### 3. Verify after deploy
+
+```sh
+systemctl status subduction
+sudo journalctl -u subduction --since "5 minutes ago" --no-pager -p warning
+curl -sI https://subduction.sync.inkandswitch.com
+```
+
+Expect HTTP `200`/`426` from the public endpoint (Subduction will
+upgrade to WebSocket; a plain `curl` returning `426 Upgrade Required`
+is healthy). See [Health checks](#health-checks) for a fuller list.
+
+### 4. Roll back if something is wrong
+
+```sh
+sudo nixos-rebuild switch --rollback         # back to previous generation
+sudo nix-env --list-generations -p /nix/var/nix/profiles/system   # see history
+sudo /nix/var/nix/profiles/system-<N>-link/bin/switch-to-configuration switch
+```
+
+The previous generation is also available from the GRUB menu on reboot.
+
+### Updating just the OS (security patches)
+
+To pick up the latest `nixos-25.11` channel without touching Subduction:
+
+```sh
+nix flake update nixpkgs
+nixos-rebuild switch --flake .#bedrock --target-host … --build-host …
+```
+
+Subduction's NixOS module pins its own dependencies via the
+`subduction` flake input, so a `nixpkgs` bump won't move Subduction.
+
+### Garbage-collecting old generations
+
+After several deploys, old system closures accumulate in the Nix store:
+
+```sh
+sudo nix-collect-garbage --delete-older-than 14d
+sudo nixos-rebuild switch --flake .#bedrock        # refresh the bootloader entries
+```
+
+The `nix.gc` settings in [`nix.nix`](./nix.nix) also schedule periodic
+GC; manual collection is mainly useful when disk pressure is high
+_now_.
 
 ## Health checks
 

@@ -97,11 +97,11 @@
     },
     "nixos-unstable": {
       "locked": {
-        "lastModified": 1776927958,
-        "narHash": "sha256-XOzEtft7E0P6TgQViLUOQeGHlEYiQ0+FY24BPEksj6s=",
+        "lastModified": 1778060440,
+        "narHash": "sha256-5uwxUCXwDNzqIA5TWMIG9gSk1nZf+z//Wae4PLuwydw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fec2c46cca5bf9767486a290abae51200b656d69",
+        "rev": "39d9e4fcf3976da8dd0d523723747ee11a3d6f7a",
         "type": "github"
       },
       "original": {
@@ -158,11 +158,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776914043,
-        "narHash": "sha256-qug5r56yW1qOsjSI99l3Jm15JNT9CvS2otkXNRNtrPI=",
+        "lastModified": 1778123869,
+        "narHash": "sha256-hV9D8ET33kXjdoMXBT2bwM/j8WQM1SP/dVKZtjQKhAQ=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "2d35c4358d7de3a0e606a6e8b27925d981c01cc3",
+        "rev": "592e5dedf04f0eaff1ed0f01ce5db7407d9fc7be",
         "type": "github"
       },
       "original": {
@@ -183,16 +183,16 @@
         "wasm-bodge-src": "wasm-bodge-src"
       },
       "locked": {
-        "lastModified": 1776957193,
-        "narHash": "sha256-zeA4irSd/ljhFV/poPnohL4EDqUumHdr/cUEHTOljw0=",
+        "lastModified": 1778139239,
+        "narHash": "sha256-6dVNCq0v2L2YAqvo9sopqttN+vURFblhBB08ShY/ug8=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "fe8a3049cb6f9fad4823a2bcb1841f61bc04cc5d",
+        "rev": "9bfbb377b8dd57eb1b5e4254545c8c3ded70a477",
         "type": "github"
       },
       "original": {
         "owner": "inkandswitch",
-        "ref": "v0.13.0",
+        "ref": "v0.14.0-nightly.2026-05-07",
         "repo": "subduction",
         "type": "github"
       }
@@ -246,11 +246,11 @@
     "wasm-bodge-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1776941391,
-        "narHash": "sha256-glfW4gQpUXpRVwpBKY4Fo6fk8UEPR1ZdI3+qBVnhl4Y=",
+        "lastModified": 1777388480,
+        "narHash": "sha256-kMiTQnU/NVIhRnwp/YEW3lU9r0O/rkLSPOeBTznXHoc=",
         "owner": "alexjg",
         "repo": "wasm-bodge",
-        "rev": "e163db2b7d95e7af599ab5022ef2765301721c9e",
+        "rev": "58e0d9b2c3b749d81df7813e380432d04a904f23",
         "type": "github"
       },
       "original": {
