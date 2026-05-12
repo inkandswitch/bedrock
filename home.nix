@@ -20,6 +20,7 @@
     packages = with pkgs; [
       btop
       iftop
+      iproute2
       killall
       nethogs
       ripgrep
