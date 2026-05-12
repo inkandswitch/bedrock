@@ -17,13 +17,12 @@
     homeDirectory = "/home/${username}";
     stateVersion  = "25.11";
 
+    # System-wide investigation tooling lives in configuration.nix's
+    # environment.systemPackages so it works under sudo and on root
+    # sessions.  Only per-user shell conveniences belong here.
     packages = with pkgs; [
       btop
-      iftop
-      iproute2
       killall
-      nethogs
-      ripgrep
     ];
   };
 
