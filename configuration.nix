@@ -329,12 +329,48 @@
     };
 
     environment.systemPackages = with pkgs; [
+      # Editors, shell, baseline
       curl
       git
-      htop
-      ncurses
       tmux
       vim
+
+      # Process / system snapshot
+      htop
+      ncurses
+      procs
+      sysstat
+
+      # Disk & inode forensics  (see OPERATIONS.md "Disk and inode pressure")
+      dust
+      duf
+      iotop-c
+      lsof
+      ncdu
+
+      # Networking & connections
+      bandwhich
+      bind             # dig, drill
+      iftop
+      iproute2         # ss, ip
+      mtr
+      nethogs
+      socat
+      tcpdump
+
+      # Structured data & search
+      bat
+      fd
+      jq
+      ripgrep
+
+      # Logs
+      lnav
+
+      # Tracing & profiling
+      bpftrace
+      linuxPackages.perf
+      strace
     ];
 
     system.stateVersion = "25.11";
