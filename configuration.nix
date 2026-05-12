@@ -120,8 +120,23 @@
         enable = true;
         email  = "hello@brooklynzelenka.com";
 
+        # `flush_interval -1` puts Caddy into low-latency mode for
+        # streamed responses (WebSocket upgrades, SSE, etc.) — it
+        # disables response buffering and flushes immediately, which
+        # is what long-lived WS connections need.
+        #
+        # `stream_close_delay 5m` keeps WebSocket connections alive
+        # for 5 minutes across Caddy config reloads (cert renewal,
+        # `nixos-rebuild switch`, etc.). Without this, every reload
+        # forcibly closes every active WS via a Close control frame —
+        # which on the subduction side manifests as the
+        # "peer X disconnected: sender task stopped" cascade. The
+        # 5-minute grace gives clients a chance to drain naturally.
         virtualHosts.${publicHostname}.extraConfig = ''
-          reverse_proxy localhost:8080
+          reverse_proxy localhost:8080 {
+            flush_interval -1
+            stream_close_delay 5m
+          }
         '';
 
         virtualHosts."dashboard.${publicHostname}".extraConfig = ''
