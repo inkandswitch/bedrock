@@ -210,7 +210,13 @@ This rewrites `flake.lock`. _Review the diff_ before deploying:
 git diff flake.lock
 ```
 
-Pinning Subduction to a specific tag is done by editing `flake.nix`:
+Subduction tracks the `main` branch of
+[`inkandswitch/subduction`](https://github.com/inkandswitch/subduction);
+`nix flake update subduction` picks up whatever the latest commit on
+that branch is. The exact commit deployed is always recorded in
+`flake.lock` (see the `subduction.locked.rev` field).
+
+To pin to a specific tag instead, edit `flake.nix`:
 
 ```nix
 subduction.url = "github:inkandswitch/subduction/v0.14.0-nightly.2026-05-07";

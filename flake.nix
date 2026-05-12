@@ -10,7 +10,7 @@
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 
-    subduction.url = "github:inkandswitch/subduction/v0.14.0-nightly.2026-05-07";
+    subduction.url = "github:inkandswitch/subduction";
     subduction.inputs.nixpkgs.follows = "nixpkgs";
 
     unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
