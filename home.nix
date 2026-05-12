@@ -19,7 +19,9 @@
 
     packages = with pkgs; [
       btop
+      iftop
       killall
+      nethogs
       ripgrep
     ];
   };
