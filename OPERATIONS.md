@@ -56,15 +56,15 @@ there is **no** `/var/log/subduction/` directory.
 ### Tailing live
 
 ```sh
-sudo journalctl -u subduction -f
+sudo journalctl -o cat -u subduction -f
 ```
 
 ### Time windows
 
 ```sh
-sudo journalctl -u subduction --since "10 minutes ago" --no-pager
-sudo journalctl -u subduction --since "2026-05-06 14:00" --until "2026-05-06 15:00" --no-pager
-sudo journalctl -u subduction --since today --no-pager
+sudo journalctl -o cat -u subduction --since "10 minutes ago" --no-pager
+sudo journalctl -o cat -u subduction --since "2026-05-06 14:00" --until "2026-05-06 15:00" --no-pager
+sudo journalctl -o cat -u subduction --since today --no-pager
 ```
 
 `--no-pager` is useful when piping into `rg` / `grep` / `wc` (otherwise the
@@ -79,8 +79,8 @@ emerg  alert  crit  err  warning  notice  info  debug
 ```
 
 ```sh
-sudo journalctl -u subduction --since "10 minutes ago" -p err     # errors only
-sudo journalctl -u subduction --since "10 minutes ago" -p warning # warnings + errors
+sudo journalctl -o cat -u subduction --since "10 minutes ago" -p err     # errors only
+sudo journalctl -o cat -u subduction --since "10 minutes ago" -p warning # warnings + errors
 ```
 
 > [!CAUTION]
@@ -93,8 +93,8 @@ When you want to find log lines mentioning a specific tree, peer, etc., grep
 the textual output:
 
 ```sh
-sudo journalctl -u subduction --since "1 hour ago" --no-pager | rg -i 'WARN|ERR'
-sudo journalctl -u subduction --since today --no-pager | rg '<tree-id-prefix>'
+sudo journalctl -o cat -u subduction --since "1 hour ago" --no-pager | rg -i 'WARN|ERR'
+sudo journalctl -o cat -u subduction --since today --no-pager | rg '<tree-id-prefix>'
 ```
 
 (`-u WARN` to `journalctl` is **not** a level filter — `-u` selects the
@@ -157,7 +157,7 @@ new files even with disk space remaining. Same goes for `df -h` and bytes.
 btop                                              # interactive: q to quit
 systemctl --failed                                # any units in a bad state?
 systemctl list-units --type=service --state=running
-journalctl --since "1 hour ago" -p err            # errors across all units
+journalctl -o cat --since "1 hour ago" -p err     # errors across all units
 ```
 
 ## Deploying changes (on the server)
