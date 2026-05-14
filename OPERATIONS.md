@@ -16,8 +16,8 @@ For deploying changes from your laptop, see the
 | You want to…                          | Run                                                                                       |
 |---------------------------------------|-------------------------------------------------------------------------------------------|
 | See if Subduction is running          | `systemctl status subduction`                                                             |
-| Tail logs live                        | `sudo journalctl -u subduction -f`                                                        |
-| Look at the last 10 min of logs       | `sudo journalctl -u subduction --since "10 minutes ago" --no-pager`                       |
+| Tail logs live                        | `sudo journalctl -u subduction -f -o cat`                                                 |
+| Look at the last 10 min of logs       | `sudo journalctl -u subduction --since "10 minutes ago" --no-pager -o cat`                |
 | Just errors / warnings                | append ` -p err` or ` -p warning` (see [Log priority filtering](#log-priority-filtering)) |
 | Restart Subduction                    | `sudo systemctl restart subduction`                                                       |
 | Check disk space                      | `df -h /`                                                                                 |
