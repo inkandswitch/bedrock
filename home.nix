@@ -9,7 +9,7 @@
 #   username : Unix login name           (e.g. "expede")
 #   fullName : Git author name           (e.g. "Brooklyn Zelenka")
 #   email    : Git author email
-#   shell    : "fish" or "zsh"
+#   shell    : shell package             (e.g. pkgs.fish, pkgs.zsh, pkgs.bash)
 { pkgs, username, fullName, email, shell, ... }:
 {
   home = {
@@ -31,8 +31,9 @@
   };
 
   programs = {
-    fish.enable     = shell == "fish";
-    zsh.enable      = shell == "zsh";
+    bash.enable     = shell == pkgs.bash;
+    fish.enable     = shell == pkgs.fish;
+    zsh.enable      = shell == pkgs.zsh;
     starship.enable = true;
 
     git = {

@@ -373,7 +373,7 @@
 
       # Tracing & profiling
       bpftrace
-      linuxPackages.perf
+      perf
       strace
     ];
 
