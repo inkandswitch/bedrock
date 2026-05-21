@@ -29,32 +29,32 @@
   # ── Logs ────────────────────────────────────────────────────────────
   logs = {
     "logs:tail" = cmd "Tail Subduction logs live"
-      "${journalctl} -u subduction -f";
+      "${journalctl} -o cat -u subduction -f";
 
     "logs:since" = cmd "Subduction logs since a time window (default: 10 minutes ago)" ''
       SINCE="''${1:-10 minutes ago}"
-      ${journalctl} -u subduction --since "$SINCE" --no-pager
+      ${journalctl} -o cat -u subduction --since "$SINCE" --no-pager
     '';
 
     "logs:errors" = cmd "Recent Subduction errors only (default since 1 hour ago)" ''
       SINCE="''${1:-1 hour ago}"
-      ${journalctl} -u subduction --since "$SINCE" -p err --no-pager
+      ${journalctl} -o cat -u subduction --since "$SINCE" -p err --no-pager
     '';
 
     "logs:warn" = cmd "Recent Subduction warnings + errors (default since 1 hour ago)" ''
       SINCE="''${1:-1 hour ago}"
-      ${journalctl} -u subduction --since "$SINCE" -p warning --no-pager
+      ${journalctl} -o cat -u subduction --since "$SINCE" -p warning --no-pager
     '';
 
     "logs:grep" = cmd "Grep Subduction logs (logs:grep <pattern> [since])" ''
       PATTERN="''${1:?Usage: logs:grep <pattern> [since]}"
       SINCE="''${2:-1 hour ago}"
-      ${journalctl} -u subduction --since "$SINCE" --no-pager \
+      ${journalctl} -o cat -u subduction --since "$SINCE" --no-pager \
         | ${ripgrep} --color=always "$PATTERN"
     '';
 
     "logs:journal" = cmd "Tail the entire systemd journal (all units)"
-      "${journalctl} -f";
+      "${journalctl} -o cat -f";
   };
 
   # ── Service control ─────────────────────────────────────────────────

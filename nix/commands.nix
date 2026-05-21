@@ -30,38 +30,38 @@
   logs = {
     "logs:tail" = cmd "Tail Subduction logs live" ''
       ${resolveHost}
-      ${ssh} "$HOST" 'sudo journalctl -u subduction -f'
+      ${ssh} "$HOST" 'sudo journalctl -o cat -u subduction -f'
     '';
 
     "logs:since" = cmd "Subduction logs since a time window (default: 10 minutes ago)" ''
       ${resolveHost}
       SINCE="''${1:-10 minutes ago}"
-      ${ssh} "$HOST" "sudo journalctl -u subduction --since '$SINCE' --no-pager"
+      ${ssh} "$HOST" "sudo journalctl -o cat -u subduction --since '$SINCE' --no-pager"
     '';
 
     "logs:errors" = cmd "Recent Subduction errors only (default since 1 hour ago)" ''
       ${resolveHost}
       SINCE="''${1:-1 hour ago}"
-      ${ssh} "$HOST" "sudo journalctl -u subduction --since '$SINCE' -p err --no-pager"
+      ${ssh} "$HOST" "sudo journalctl -o cat -u subduction --since '$SINCE' -p err --no-pager"
     '';
 
     "logs:warn" = cmd "Recent Subduction warnings + errors (default since 1 hour ago)" ''
       ${resolveHost}
       SINCE="''${1:-1 hour ago}"
-      ${ssh} "$HOST" "sudo journalctl -u subduction --since '$SINCE' -p warning --no-pager"
+      ${ssh} "$HOST" "sudo journalctl -o cat -u subduction --since '$SINCE' -p warning --no-pager"
     '';
 
     "logs:grep" = cmd "Grep Subduction logs (logs:grep <pattern> [since])" ''
       ${resolveHost}
       PATTERN="''${1:?Usage: logs:grep <pattern> [since]}"
       SINCE="''${2:-1 hour ago}"
-      ${ssh} "$HOST" "sudo journalctl -u subduction --since '$SINCE' --no-pager" \
+      ${ssh} "$HOST" "sudo journalctl -o cat -u subduction --since '$SINCE' --no-pager" \
         | ${ripgrep} --color=always "$PATTERN"
     '';
 
     "logs:journal" = cmd "Tail the entire systemd journal (all units)" ''
       ${resolveHost}
-      ${ssh} "$HOST" 'sudo journalctl -f'
+      ${ssh} "$HOST" 'sudo journalctl -o cat -f'
     '';
   };
 
