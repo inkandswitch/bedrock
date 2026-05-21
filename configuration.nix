@@ -1,4 +1,4 @@
-{ config, lib, pkgs, hostname, adminUsername, ... }:
+{ config, lib, pkgs, hostname, adminUsername, bedrockMenu, ... }:
   let
     publicHostname = "subduction.sync.inkandswitch.com";
 
@@ -332,7 +332,7 @@
       Environment = "RUST_LOG=subduction=info";
     };
 
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = (with pkgs; [
       # Editors, shell, baseline
       curl
       git
@@ -345,7 +345,7 @@
       procs
       sysstat
 
-      # Disk & inode forensics  (see OPERATIONS.md "Disk and inode pressure")
+      # Disk & inode forensics  (see COOKBOOK.md "Disk and inode pressure")
       dust
       duf
       iotop-c
@@ -375,7 +375,9 @@
       bpftrace
       perf
       strace
-    ];
+    ]) ++ bedrockMenu;
+    # ↑ Bedrock-specific command bundle — provides `menu`, `logs:tail`,
+    # `service:restart`, `health`, `gens`, etc.  See nix/server-commands.nix.
 
     system.stateVersion = "25.11";
   }
