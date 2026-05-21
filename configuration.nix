@@ -6,7 +6,7 @@
       ${adminUsername} = {
         name  = "Brooklyn Zelenka";
         email = "brooklyn@inkandswitch.com";
-        shell = "fish";
+        shell = pkgs.fish;
         keys  = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPUKVPRsoJEVWhHtz/2RhbVTZNvyNEm08KJK/3bOSdNc"
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmJy3W56uqJjXGCHYOSJkLw+Ae/SgtF8B0qtjcDxtXp"
@@ -16,7 +16,7 @@
       alexjg = {
         name  = "Alex Good";
         email = "alex@inkandswitch.com";
-        shell = "zsh";
+        shell = pkgs.zsh;
         keys  = [
           "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDfnGYUnlU6SKm6VGZQRxUGA+p9PgjEmaUhSKQeKx+pgAq8F1yRrmJQ6hsCsHrGu0+Rk/r1wi6MImUej2vmit8jO5wjBcv17EJM9bCXQUvrElLtaH+815r/DOIfyEsSpuZxe5tQ+IoKnasBQUKCkvGwBrPotJmqsHS5xqhke4/uGSid/g2ZSsF2ScLlD2E20+8OsTKw6nE+pfs+uchXwoiMmhclcyWK9cEwA9GLpPcjikQwdQThmeIZZGvRX7WvuPLZMp/AeoxCB+Y3KjEYpBtVS+rsv48GUAq2V0+SG35C1HJ3gGnKA+13xSdIHtfzxjlQy+7QWtagzF/0LlEgxm6gqsyC0xyDLDqiDxVRR8Nj0+ZXNejRNFubwg3YD4jx/JTIJ4u3/XDMlAw7wJGg1t3cMy+uR3/+cacsn5Py2nRZYvIxtBpToMKU9JOwVi6vz4kt+OeanLWP05a08XAnBW+c10P8qeN09he5Vvn6KL7cMr9RsGXzp9BHYqfc82PhskE="
           # alex-zephyrus
@@ -27,7 +27,7 @@
       alexwarth = {
         name  = "Alex Warth";
         email = "alexwarth@inkandswitch.com";
-        shell = "zsh";
+        shell = pkgs.zsh;
         keys  = [
           "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1o2gb/keuxDxuk4QlZKcxWMSbvWDYLENX+6vEGA/4T9Yg6eL2g7ovRKo25/rOZV6hgc5TMt//VMSgJcf6LXJngmr3KkXe+QNu3a1jimosVhFwjule2U5R5dKETGupQ2kopBaV3PWLFb+ZbvhgdlY8HeFaOvUAybxfvLOmFtj1ta5VT2ccXPXKndCjfw/eaICknNhevi36KObCdj7Eh/BhI5kN77t61cPbQW+J29UubC6eqToVIFIMG0oD913rUV+yASpAPDsYz4FsMU8ONx8vjwUTQhWLYli3aKniVyHC4HNOoJ/cDlYHJ0+RoHzpKiQueEiHtdd1e2/YVW+K8F4mw=="
         ];
@@ -36,7 +36,7 @@
       chee = {
         name  = "Chee Rabbits";
         email = "chee@inkandswitch.com";
-        shell = "zsh";
+        shell = pkgs.zsh;
         keys  = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHzdaK1G+GPAqG0GfinR6xMMTzmLX2DgFMDSnLE/vEmW yay@chee.party"
         ];
@@ -45,17 +45,21 @@
       pvh = {
         name  = "Peter van Hardenberg";
         email = "pvh@inkandswitch.com";
-        shell = "zsh";
+        shell = pkgs.zsh;
         keys  = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIxWJimKcZjUM4cyuroZ2brFclTxpDsoxQ3NjK43eWbn"
         ];
       };
-    };
 
-    shellPackage = shell:
-      if shell == "fish" then pkgs.fish
-      else if shell == "zsh" then pkgs.zsh
-      else throw "shellPackage: unknown shell '${shell}'";
+      john = {
+        name  = "John Mumm";
+        email = "jtfmumm@inkandswitch.com";
+        shell = pkgs.bash;
+        keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGWVjwE2zAGZtqe95duKLtYsUsx9RaPVbn/i4QyQ/Y/b jtfmumm@gmail.com"
+        ];
+      };
+    };
   in {
     networking.hostName = hostname;
     networking.firewall = {
@@ -70,13 +74,13 @@
       isNormalUser = true;
       description  = account.name;
       extraGroups  = [ "wheel" ];
-      shell        = shellPackage account.shell;
+      shell        = account.shell;
       openssh.authorizedKeys.keys = account.keys;
     }) accounts;
 
-    # Each shell needs to be enabled at the system level so login shells work.
-    programs.fish.enable = lib.any (a: a.shell == "fish") (lib.attrValues accounts);
-    programs.zsh.enable  = lib.any (a: a.shell == "zsh")  (lib.attrValues accounts);
+    programs.bash.enable = true;
+    programs.zsh.enable  = true;
+    programs.fish.enable = true;
 
     # Per-user home-manager configuration.  Every account gets the same base
     # home.nix, parameterized by the per-account name/email/shell via

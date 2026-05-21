@@ -183,11 +183,11 @@
         "wasm-bodge-src": "wasm-bodge-src"
       },
       "locked": {
-        "lastModified": 1778652994,
-        "narHash": "sha256-YvfwBqJi2WMphfJdgIady00iMjxepwUB1ae2NMwoFyA=",
+        "lastModified": 1778742833,
+        "narHash": "sha256-rNZRBBwAlZp3uxVSj6aeBHGfDO6dzfAqSRuO1heDng0=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "425ff3908a0cd74b7cf7214869dfd0ab4beffb46",
+        "rev": "e31e208a079d7e3b0bba792e55210bc5cef63bbc",
         "type": "github"
       },
       "original": {
@@ -228,11 +228,11 @@
     },
     "unstable": {
       "locked": {
-        "lastModified": 1778580735,
-        "narHash": "sha256-t+8AVV8ExvOmslz2sLIgw/hJBKlyl65rJvxjvvjHgpE=",
+        "lastModified": 1778672786,
+        "narHash": "sha256-Blg88K1jwG+P0Mr27+rKMFCufdrWkV3wWh9AdYtz0FQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "48d91f2c0ce7b9e589f967d4f685153dd765dcdd",
+        "rev": "eef00dfd8a712b34af845f9350bac681b1228bd1",
         "type": "github"
       },
       "original": {
