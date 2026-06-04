@@ -2,6 +2,75 @@
   let
     publicHostname = "subduction.sync.inkandswitch.com";
 
+    # Encoding conversion helpers: base58check <-> hex <-> base64.
+    #
+    # These are deliberately *not* part of the `bedrockMenu` command bundle:
+    # that bundle prefixes every command's stdout with a "Running …" banner,
+    # which would pollute copy-paste and break chaining one conv into another.
+    # Plain `writeShellApplication` scripts keep stdout clean and pipeable.
+    #
+    # Each script reads its input from $1 or, if absent, stdin; strips
+    # surrounding whitespace; and writes the result (plus a trailing newline)
+    # to stdout.  `set -euo pipefail` (via writeShellApplication) makes a
+    # failed decode — e.g. a bad base58check checksum — exit non-zero.
+    #
+    # Encodings:
+    #   hex   lowercase hex            (xxd -p)
+    #   b64   standard base64          (basenc --base64)
+    #   b58   plain base58             (base58)
+    #   b58c  base58check (4-byte sum) (base58 -c / -d -c verifies & strips)
+    #
+    # Raw bytes are the pivot: every conversion is "decode <from> to bytes"
+    # piped into "encode bytes to <to>".  Naming: conv:<from>:<to>.
+    convTools = let
+      base58 = "${pkgs.python3Packages.base58}/bin/base58";
+      basenc = "${pkgs.coreutils}/bin/basenc";
+      cat    = "${pkgs.coreutils}/bin/cat";
+      tr     = "${pkgs.coreutils}/bin/tr";
+      xxd    = "${pkgs.unixtools.xxd}/bin/xxd";
+
+      # bytes -> X
+      encHex  = "${xxd} -p | ${tr} -d '\\n'";
+      encB64  = "${basenc} --base64 -w0";
+      encB58  = base58;
+      encB58c = "${base58} -c";
+
+      # X -> bytes
+      decHex  = "${xxd} -r -p";
+      decB64  = "${basenc} -d --base64";
+      decB58  = "${base58} -d";
+      decB58c = "${base58} -d -c";
+
+      mkConv = name: decoder: encoder:
+        pkgs.writeShellApplication {
+          inherit name;
+          text = ''
+            { if [ "$#" -ge 1 ]; then printf '%s' "$1"; else ${cat}; fi; } \
+              | ${tr} -d '[:space:]' \
+              | ${decoder} \
+              | ${encoder}
+            echo
+          '';
+        };
+    in pkgs.symlinkJoin {
+      name = "bedrock-conv-tools";
+      paths = [
+        (mkConv "conv:hex:b64"  decHex  encB64)
+        (mkConv "conv:hex:b58"  decHex  encB58)
+        (mkConv "conv:hex:b58c" decHex  encB58c)
+
+        (mkConv "conv:b64:hex"  decB64  encHex)
+        (mkConv "conv:b64:b58"  decB64  encB58)
+        (mkConv "conv:b64:b58c" decB64  encB58c)
+
+        (mkConv "conv:b58:hex"  decB58  encHex)
+        (mkConv "conv:b58:b64"  decB58  encB64)
+
+        (mkConv "conv:b58c:hex" decB58c encHex)
+        (mkConv "conv:b58c:b64" decB58c encB64)
+      ];
+    };
+
     accounts = {
       ${adminUsername} = {
         name  = "Brooklyn Zelenka";
@@ -368,6 +437,11 @@
       jq
       ripgrep
 
+      # Encoding / conversion  (base58check <-> hex <-> base64)
+      python3Packages.base58   # `base58` CLI: -c for base58check, -d to decode
+      unixtools.xxd            # `xxd`: hex dump / reverse  (-p plain, -r reverse)
+      convTools
+
       # Logs
       lnav
 
@@ -375,9 +449,8 @@
       bpftrace
       perf
       strace
+
     ]) ++ bedrockMenu;
-    # ↑ Bedrock-specific command bundle — provides `menu`, `logs:tail`,
-    # `service:restart`, `health`, `gens`, etc.  See nix/server-commands.nix.
 
     system.stateVersion = "25.11";
   }
