@@ -399,6 +399,47 @@
       # avoid "Too many open files" under heavy publish-all workloads.
       LimitNOFILE = 1048576;
       Environment = "RUST_LOG=subduction=info";
+
+      MemoryAccounting = true;
+      MemoryHigh = "6.5G";
+      MemoryMax = "7G";
+
+      # Prefer killing Subduction over anything else when the box is under
+      # real memory pressure; pairs with systemd-oomd below.
+      ManagedOOMMemoryPressure = "kill";
+      OOMScoreAdjust = 500;
+    };
+
+    # Always keep memory available for the system slice (sshd, login,
+    # systemd, the shell) so administrative access survives even when a
+    # service tries to eat all of RAM.  MemoryMin is a *hard* reservation:
+    # the kernel will reclaim/OOM elsewhere before touching this.  This is
+    # the direct fix for being locked out at 99.5% RAM.
+    systemd.slices.system.sliceConfig = {
+      MemoryAccounting = true;
+      MemoryMin = "768M";
+    };
+
+    # Userspace early-OOM killer.  The in-kernel OOM killer acts late and
+    # picks victims heuristically (it can kill sshd).  systemd-oomd watches
+    # cgroup memory-pressure (PSI) and acts *early*, killing the offending
+    # cgroup before the box wedges.  Combined with ManagedOOMMemoryPressure
+    # = "kill" on Subduction above, the heavy service is the one that dies.
+    systemd.oomd = {
+      enable = true;
+      enableRootSlice = true;
+      enableSystemSlice = true;
+      enableUserSlices = true;
+    };
+
+    # Compressed RAM swap as a cushion for brief allocation spikes.  No disk
+    # swap (the droplet has only an ext4 root); zram trades a little CPU for
+    # ~2x effective headroom and gives systemd-oomd clearer pressure signals
+    # to act on before memory is truly exhausted.
+    zramSwap = {
+      enable = true;
+      algorithm = "zstd";
+      memoryPercent = 50;
     };
 
     environment.systemPackages = (with pkgs; [
