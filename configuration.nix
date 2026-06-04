@@ -400,31 +400,34 @@
       LimitNOFILE = 1048576;
       Environment = "RUST_LOG=subduction=info";
 
-      MemoryAccounting = true;
-      MemoryHigh = "6.5G";
-      MemoryMax = "7G";
-
-      # Prefer killing Subduction over anything else when the box is under
-      # real memory pressure; pairs with systemd-oomd below.
+      # Subduction is deliberately left *uncapped* so legitimate heavy syncs
+      # are never OOM-killed by a guessed ceiling.  Instead we guarantee a
+      # memory floor for SSH (see ssh.slice below) and let systemd-oomd shed
+      # the heaviest cgroup under pressure.  Mark Subduction as the preferred
+      # victim
+      # (Restart=on-failure from the upstream module revives it).
       ManagedOOMMemoryPressure = "kill";
       OOMScoreAdjust = 500;
     };
 
-    # Always keep memory available for the system slice (sshd, login,
-    # systemd, the shell) so administrative access survives even when a
-    # service tries to eat all of RAM.  MemoryMin is a *hard* reservation:
-    # the kernel will reclaim/OOM elsewhere before touching this.  This is
-    # the direct fix for being locked out at 99.5% RAM.
-    systemd.slices.system.sliceConfig = {
+    # Dedicated slice for SSH so its memory floor can never be consumed by a
+    # sibling service (e.g. Subduction) sharing system.slice.  MemoryMin is a
+    # *hard* reservation: the kernel reclaims and OOM-kills other cgroups
+    # before ever reclaiming below this floor, so we can always log in --
+    # even at ~100% RAM.  This is the direct fix for the 99.5%-RAM lockout,
+    # and it lets us leave Subduction uncapped.
+    systemd.slices.ssh.sliceConfig = {
       MemoryAccounting = true;
       MemoryMin = "768M";
     };
+    systemd.services.sshd.serviceConfig.Slice = "ssh.slice";
 
     # Userspace early-OOM killer.  The in-kernel OOM killer acts late and
     # picks victims heuristically (it can kill sshd).  systemd-oomd watches
     # cgroup memory-pressure (PSI) and acts *early*, killing the offending
     # cgroup before the box wedges.  Combined with ManagedOOMMemoryPressure
-    # = "kill" on Subduction above, the heavy service is the one that dies.
+    # = "kill" on Subduction above, the heavy service is the one that dies --
+    # while the ssh.slice MemoryMin floor keeps administrative access alive.
     systemd.oomd = {
       enable = true;
       enableRootSlice = true;
@@ -433,13 +436,14 @@
     };
 
     # Compressed RAM swap as a cushion for brief allocation spikes.  No disk
-    # swap (the droplet has only an ext4 root); zram trades a little CPU for
-    # ~2x effective headroom and gives systemd-oomd clearer pressure signals
-    # to act on before memory is truly exhausted.
+    # swap (the droplet has only an ext4 root); zram trades a little CPU to
+    # compress cold pages and gives systemd-oomd clearer pressure signals to
+    # act on before memory is truly exhausted.  Kept modest so the backing
+    # store does not itself contend heavily for the 8 GiB of physical RAM.
     zramSwap = {
       enable = true;
       algorithm = "zstd";
-      memoryPercent = 50;
+      memoryPercent = 25;
     };
 
     environment.systemPackages = (with pkgs; [
