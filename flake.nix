@@ -48,9 +48,10 @@
     bedrockMenu = command-utils.commands.${targetSystem} [
       {
         commands = import ./nix/server-commands.nix {
-          pkgs   = targetPkgs;
-          system = targetSystem;
-          cmd    = command-utils.cmd.${targetSystem};
+          pkgs       = targetPkgs;
+          system     = targetSystem;
+          cmd        = command-utils.cmd.${targetSystem};
+          subduction = subduction;
         };
         packages = [];
       }

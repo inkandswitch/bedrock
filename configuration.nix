@@ -219,13 +219,14 @@
 
       subduction = {
         server = {
-          enable         = true;
-          serviceName    = publicHostname;
-          socket         = "127.0.0.1:8080";
-          keyFile        = "/var/lib/subduction/key-seed";
-          maxMessageSize = 104857600; # 100 MiB
-          enableMetrics  = true;
-          metricsPort    = 9090;
+          enable           = true;
+          serviceName      = publicHostname;
+          socket           = "127.0.0.1:8080";
+          keyFile          = "/var/lib/subduction/key-seed";
+          maxMessageSize   = 104857600; # 100 MiB
+          maxResidentTrees = 32768;     # 2^15; LRU-evict beyond this to bound the working set
+          enableMetrics    = true;
+          metricsPort      = 9090;
         };
 
         grafana.provisionDashboard = true;

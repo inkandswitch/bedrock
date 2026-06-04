@@ -174,7 +174,7 @@
 
     "disk:trees" = cmd "Count Subduction trees currently hosted" ''
       ${resolveHost}
-      ${ssh} "$HOST" 'sudo ls /var/lib/subduction/trees | wc -l'
+      ${ssh} "$HOST" 'sudo find /var/lib/subduction/trees -mindepth 2 -maxdepth 2 -type d | wc -l'
     '';
 
     "disk:subduction" = cmd "Show bytes + inodes under /var/lib/subduction/" ''
@@ -196,6 +196,17 @@
     '';
   };
 
+  # ── Storage migration ───────────────────────────────────────────────
+  storage = {
+    "storage:migrate-trees" = cmd "Migrate trees/ from flat to sharded layout on bedrock (stops Subduction)" ''
+      ${resolveHost}
+      # Delegates to the on-server menu command, which holds the script path
+      # pinned to the running system's Subduction revision.  Pass --dry-run
+      # through to preview without stopping the service.
+      ${ssh} -t "$HOST" "storage:migrate-trees ''${1:-}"
+    '';
+  };
+
   # ── Flake / updates ─────────────────────────────────────────────────
   update = {
     "update" = cmd "Update every flake input" "nix flake update";
@@ -207,4 +218,4 @@
       "nix flake update nixpkgs unstable";
   };
 in
-  deploy // disk // health // logs // service // shell // update
+  deploy // disk // health // logs // service // shell // storage // update

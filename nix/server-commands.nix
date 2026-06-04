@@ -14,14 +14,20 @@
   pkgs,
   system,
   cmd,
+  subduction,
 }: let
   awk        = "${pkgs.gawk}/bin/awk";
+  bash       = "${pkgs.bash}/bin/bash";
   coreutils  = pkgs.coreutils;
   curl       = "${pkgs.curl}/bin/curl";
   journalctl = "${pkgs.systemd}/bin/journalctl";
   nix-env    = "${pkgs.nix}/bin/nix-env";
   ripgrep    = "${pkgs.ripgrep}/bin/rg";
   systemctl  = "${pkgs.systemd}/bin/systemctl";
+
+  # The flat-to-sharded trees migration script ships in the Subduction source,
+  # pinned to the exact revision this system is built from.
+  migrateTreesScript = "${subduction}/scripts/migrate-trees-sharding.sh";
 
   # NixOS places setuid wrappers (sudo, etc.) under /run/wrappers/bin.
   sudo = "/run/wrappers/bin/sudo";
@@ -112,12 +118,38 @@
     "disk:inodes" = cmd "Show inode usage on root filesystem"
       "${coreutils}/bin/df -i /";
 
+    # Trees live two levels deep under the sharded layout
+    # (trees/{4-hex bucket}/{60-hex leaf}/), so a tree is a depth-2 directory.
     "disk:trees" = cmd "Count Subduction trees currently hosted"
-      "${sudo} ${coreutils}/bin/ls /var/lib/subduction/trees | ${coreutils}/bin/wc -l";
+      "${sudo} ${pkgs.findutils}/bin/find /var/lib/subduction/trees -mindepth 2 -maxdepth 2 -type d | ${coreutils}/bin/wc -l";
 
     "disk:subduction" = cmd "Show bytes + inodes under /var/lib/subduction/" ''
       ${sudo} ${coreutils}/bin/du -sh /var/lib/subduction/
       ${sudo} ${coreutils}/bin/du --inodes -s /var/lib/subduction/
+    '';
+  };
+
+  # ── Storage migration ───────────────────────────────────────────────
+  storage = {
+    "storage:migrate-trees" = cmd "Migrate trees/ from flat to sharded layout (stops Subduction)" ''
+      DATA_DIR="/var/lib/subduction"
+
+      if [ "''${1:-}" = "--dry-run" ]; then
+        echo "===> Dry run (no changes, service left running)"
+        ${sudo} ${bash} ${migrateTreesScript} "$DATA_DIR" --dry-run
+        exit 0
+      fi
+
+      echo "===> Stopping Subduction for offline migration"
+      ${sudo} ${systemctl} stop subduction
+
+      echo "===> Migrating $DATA_DIR/trees"
+      ${sudo} ${bash} ${migrateTreesScript} "$DATA_DIR"
+
+      echo "===> Starting Subduction"
+      ${sudo} ${systemctl} start subduction
+
+      echo "===> Done.  Verify with: service:status, disk:trees"
     '';
   };
 
@@ -131,4 +163,4 @@
     '';
   };
 in
-  disk // health // logs // service // system'
+  disk // health // logs // service // storage // system'

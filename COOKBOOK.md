@@ -82,6 +82,7 @@ See [`nix/server-commands.nix`](./nix/server-commands.nix) for the full set.
 | `disk:inodes`      | `df -i /`                                                                          |
 | `disk:trees`       | Count Subduction trees currently hosted                                            |
 | `disk:subduction`  | Bytes + inodes under `/var/lib/subduction/`                                        |
+| `storage:migrate-trees` | Migrate `trees/` from flat to sharded layout (stops Subduction; `--dry-run` to preview) |
 | `gens`             | List system generations with timestamps and current marker                         |
 | `users`            | List human accounts (UID ≥ 1000)                                                   |
 
@@ -98,7 +99,7 @@ Everything below explains what those wrappers do under the hood — useful when 
 | Restart Subduction                    | `sudo systemctl restart subduction`                                                       |
 | Check disk space                      | `df -h /`                                                                                 |
 | Check inodes                          | `df -i /`                                                                                 |
-| Count synced trees                    | `sudo ls /var/lib/subduction/trees \| wc -l`                                              |
+| Count synced trees                    | `sudo find /var/lib/subduction/trees -mindepth 2 -maxdepth 2 -type d \| wc -l`           |
 | CPU / memory snapshot                 | `btop`                                                                                    |
 | Apply a config change pulled from git | `sudo nixos-rebuild switch --flake .#bedrock`                                             |
 | Bump Subduction to a new version      | `nix flake update subduction` then `nixos-rebuild switch` (see [Updating](#updating-the-server)) |
@@ -178,20 +179,31 @@ Edit + `nixos-rebuild switch` to change verbosity. Useful values: `error`, `warn
 
 ## Inspecting on-disk state
 
-State lives under `/var/lib/subduction/`:
+State lives under `/var/lib/subduction/`. Trees use a **sharded layout**:
+`trees/{first-4-hex}/{remaining-60-hex}/`, where the 4-hex bucket is the
+first two bytes of the tree id and the leaf is the rest (concatenate the two
+to recover the full 64-hex id).
 
 ```sh
-sudo ls /var/lib/subduction/                      # top-level layout
-sudo ls /var/lib/subduction/trees | wc -l         # how many trees we host
-sudo ls /var/lib/subduction/trees/<tree-id>/      # contents of one tree
-sudo ls /var/lib/subduction/trees/<tree-id>/commits
+sudo ls /var/lib/subduction/                                          # top-level layout
+sudo find /var/lib/subduction/trees -mindepth 2 -maxdepth 2 -type d | wc -l  # how many trees we host
+sudo ls /var/lib/subduction/trees/<prefix>/<rest>/                    # contents of one tree
+sudo ls /var/lib/subduction/trees/<prefix>/<rest>/commits
 ```
 
-Tree IDs are 64-hex-character strings (often padded with trailing zeros). You can search for a known prefix with `grep`:
+Tree IDs are 64-hex-character strings. To find one by a known prefix, split it
+into the 4-char bucket and the remainder:
 
 ```sh
-sudo ls /var/lib/subduction/trees | grep <first-8-chars-of-tree-id>
+sudo ls /var/lib/subduction/trees/<first-4-chars>/                    # leaves in that bucket
 ```
+
+> [!NOTE]
+> This sharded layout was introduced in a Subduction upgrade. Servers that
+> predate it store trees flat (`trees/{64-hex-id}/`) and must be migrated with
+> `storage:migrate-trees` (which runs `scripts/migrate-trees-sharding.sh` from
+> the Subduction source) before the new server can see existing data. See
+> [Updating the server](#updating-the-server).
 
 > [!IMPORTANT]
 > `/var/lib/subduction/key-seed` is the server's signing-key material. Never `cat` it into terminal scrollback, never copy it off-host without encryption, and never check it into git. It is auto-generated on first boot (see [DECISIONS.md](./.ignore/DECISIONS.md), if present).
@@ -328,7 +340,42 @@ For a dry run that builds without activating:
 sudo nixos-rebuild build --flake .#bedrock
 ```
 
-### 3. Verify after deploy
+### 3. Migrate on-disk storage if the layout changed
+
+Some Subduction upgrades change the on-disk `trees/` layout. The notable one
+is the **flat → sharded** migration: the new server reads only the sharded
+layout (`trees/{4-hex}/{60-hex}/`) and silently ignores legacy flat tree
+directories (`trees/{64-hex}/`). If you are upgrading a server that predates
+sharding, its existing trees become **invisible** (not deleted) until migrated.
+
+The `storage:migrate-trees` menu command runs `scripts/migrate-trees-sharding.sh`
+from the deployed Subduction source. It is **offline** (stops the service),
+**idempotent**, and **resumable**.
+
+> [!CAUTION]
+> The data directory has no automated backups. Take a DigitalOcean snapshot (or
+> copy `/var/lib/subduction/trees`) **before** migrating.
+
+```sh
+storage:migrate-trees --dry-run    # preview moves, service stays up
+storage:migrate-trees              # stop → migrate → start
+```
+
+Prefer the menu command — it already knows the script path for the exact
+Subduction revision this system is built from. If you need to run the script
+directly (e.g. with extra flags), find its store path from the generated
+command and pass `--force` only when you have separately confirmed the service
+is stopped:
+
+```sh
+# Inspect the wrapper to see the pinned script path it invokes:
+type storage:migrate-trees                          # or: cat "$(command -v storage:migrate-trees)"
+```
+
+Skip this step entirely on a fresh server (empty `trees/`) or when the upgrade
+did not change the layout.
+
+### 4. Verify after deploy
 
 ```sh
 systemctl status subduction
@@ -338,7 +385,7 @@ curl -sI https://subduction.sync.inkandswitch.com
 
 Expect HTTP `200`/`426` from the public endpoint (Subduction will upgrade to WebSocket; a plain `curl` returning `426 Upgrade Required` is healthy). See [Health checks](#health-checks) for a fuller list.
 
-### 4. Roll back if something is wrong
+### 5. Roll back if something is wrong
 
 NixOS keeps each previous system configuration as a numbered _generation_ at `/nix/var/nix/profiles/system-N-link`. Rolling back is atomic (no half-applied state) and never destructive — old generations stay in the store and bootloader until you explicitly garbage-collect them.
 
