@@ -321,6 +321,8 @@
           http_port = 3939;
         };
 
+        settings.security.secret_key = "$__file{/var/lib/grafana/secret_key}";
+
         provision.datasources.settings.datasources = [
           {
             name      = "Prometheus";
@@ -380,6 +382,20 @@
         }
       }
     '';
+
+    systemd.services.grafana.serviceConfig.ExecStartPre = let
+      secretKey = "/var/lib/grafana/secret_key";
+      script = pkgs.writeShellScript "ensure-grafana-secret-key" ''
+        if [ ! -f "${secretKey}" ]; then
+          ${pkgs.coreutils}/bin/install -d -m 0700 -o grafana -g grafana /var/lib/grafana
+          ${pkgs.coreutils}/bin/head -c 32 /dev/urandom \
+            | ${pkgs.coreutils}/bin/base64 \
+            > "${secretKey}"
+          ${pkgs.coreutils}/bin/chmod 0400 "${secretKey}"
+          ${pkgs.coreutils}/bin/chown grafana:grafana "${secretKey}"
+        fi
+      '';
+    in "+${script}";
 
     systemd.services.subduction.serviceConfig = {
       # Generate the signing-key seed on first boot so the server can start
