@@ -227,6 +227,7 @@
           maxResidentTrees = 32768;     # 2^15; LRU-evict beyond this to bound the working set
           enableMetrics    = true;
           metricsPort      = 9090;
+          auth             = "open";
         };
 
         grafana.provisionDashboard = true;
