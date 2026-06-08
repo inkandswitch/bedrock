@@ -228,6 +228,13 @@
           enableMetrics    = true;
           metricsPort      = 9090;
           auth             = "open";
+
+          # JSON logs so Alloy can extract a `level` field for Loki — the
+          # Grafana "Log Rate by Level" panel filters on that label. Set the
+          # level through the module option (not a raw `Environment=` override,
+          # which would collide with the module's own RUST_LOG setting).
+          logFormat = "json";
+          logLevel  = "subduction=info";
         };
 
         grafana.provisionDashboard = true;
@@ -369,9 +376,27 @@
         }
       }
 
+      // ── Level extraction ───────────────────────────────────────────────
+      // Subduction runs with `--log-format json`, so each journal message is a
+      // JSON object carrying a `level` field (INFO/WARN/ERROR/…). Parse it and
+      // promote `level` to a stream label so the Grafana "Log Rate by Level"
+      // panel (which filters on `{level=~"(?i)…"}`) has data. Non-JSON lines
+      // (other units) simply have no `level` field and pass through untouched.
+      loki.process "subduction_level" {
+        forward_to = [loki.write.local.receiver]
+
+        stage.json {
+          expressions = { level = "level" }
+        }
+
+        stage.labels {
+          values = { level = "" }
+        }
+      }
+
       // ── Systemd journal ────────────────────────────────────────────────
       loki.source.journal "journal" {
-        forward_to    = [loki.write.local.receiver]
+        forward_to    = [loki.process.subduction_level.receiver]
         relabel_rules = loki.relabel.journal.rules
         max_age       = "12h"
         labels        = {
@@ -400,7 +425,9 @@
       # Subduction syncs many sedimentrees concurrently; raise fd limit to
       # avoid "Too many open files" under heavy publish-all workloads.
       LimitNOFILE = 1048576;
-      Environment = "RUST_LOG=subduction=info";
+      # NB: RUST_LOG / log format are set via services.subduction.server
+      # (logLevel / logFormat) above, not here — overriding `Environment`
+      # in this block would collide with the module's own RUST_LOG setting.
 
       # Subduction is deliberately left *uncapped* so legitimate heavy syncs
       # are never OOM-killed by a guessed ceiling.  Instead we guarantee a
