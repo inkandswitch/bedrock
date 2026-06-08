@@ -169,13 +169,29 @@ sudo journalctl -o cat -u subduction --since today --no-pager | rg '<tree-id-pre
 
 ### Subduction's own log level
 
-Set in [`configuration.nix`](./configuration.nix) via:
+Set in [`configuration.nix`](./configuration.nix) via the module option:
 
 ```nix
-systemd.services.subduction.serviceConfig.Environment = "RUST_LOG=subduction=info";
+services.subduction.server.logLevel = "subduction=info";
 ```
 
 Edit + `nixos-rebuild switch` to change verbosity. Useful values: `error`, `warn`, `info` (default), `debug`, `trace`. `trace` is _very_ chatty.
+
+> [!NOTE]
+> Set the level through `services.subduction.server.logLevel`, **not** a raw
+> `systemd.services.subduction.serviceConfig.Environment = "RUST_LOG=…"`. The
+> module already sets `RUST_LOG` from `logLevel`, so an `Environment` override
+> in the service block would collide with it.
+
+### Log format and the "Log Rate by Level" panel
+
+The server runs with `logFormat = "json"` (`services.subduction.server.logFormat`),
+so each log line is a JSON object with a `level` field. Alloy's
+`loki.process "subduction_level"` stage (in [`configuration.nix`](./configuration.nix))
+parses that JSON and promotes `level` to a Loki stream label, which the Grafana
+**Log Rate by Level** panel filters on (`{level=~"(?i)error"}`, etc.). If that
+panel is empty, check that the server still emits JSON and that the Alloy stage
+is present.
 
 ## Inspecting on-disk state
 
