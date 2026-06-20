@@ -477,6 +477,8 @@
     };
 
     environment.systemPackages = (with pkgs; [
+      config.services.subduction.package
+
       # Editors, shell, baseline
       curl
       git
@@ -524,7 +526,6 @@
       bpftrace
       perf
       strace
-
     ]) ++ bedrockMenu;
 
     system.stateVersion = "25.11";
