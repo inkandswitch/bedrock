@@ -270,11 +270,11 @@
         "wasm-bodge-src": "wasm-bodge-src"
       },
       "locked": {
-        "lastModified": 1781912134,
-        "narHash": "sha256-/G8Nmj28CmLdz39UiMmXvhcsUdvvxvjDXBSOEbCSn78=",
+        "lastModified": 1781914717,
+        "narHash": "sha256-irfol5boSB/vZrOl7oxteEW8FNyZETEPOoLYRUKRmm4=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "e2811cb64756b2897edb536660c1b39f5b0bc5e7",
+        "rev": "10e9f80de9e33ec9da59d2719009f4d77519d26f",
         "type": "github"
       },
       "original": {
