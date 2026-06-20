@@ -227,6 +227,7 @@
           maxResidentTrees = 32768;     # 2^15; LRU-evict beyond this to bound the working set
           enableMetrics    = true;
           metricsPort      = 9090;
+          adminAddr        = "127.0.0.1:9091";
           auth             = "open";
 
           # JSON logs so Alloy can extract a `level` field for Loki — the
@@ -476,6 +477,8 @@
     };
 
     environment.systemPackages = (with pkgs; [
+      config.services.subduction.package
+
       # Editors, shell, baseline
       curl
       git
@@ -523,7 +526,6 @@
       bpftrace
       perf
       strace
-
     ]) ++ bedrockMenu;
 
     system.stateVersion = "25.11";
