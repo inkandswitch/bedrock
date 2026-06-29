@@ -184,8 +184,9 @@
       openssh = {
         enable = true;
         settings = {
-          PermitRootLogin        = "no";
-          PasswordAuthentication = false;
+          PermitRootLogin              = "no";
+          PasswordAuthentication       = false;
+          KbdInteractiveAuthentication = false;
         };
       };
 
@@ -326,6 +327,8 @@
           http_port = 3939;
         };
 
+        settings.security.secret_key = "$__file{/var/lib/grafana/secret_key}";
+
         provision.datasources.settings.datasources = [
           {
             name      = "Prometheus";
@@ -405,10 +408,6 @@
     '';
 
     systemd.services.subduction.serviceConfig = {
-      # Generate the signing-key seed on first boot so the server can start
-      # without manual intervention.  The "+" prefix runs the script as
-      # root (outside the service sandbox) so chown works.  Idempotent:
-      # an existing key-seed is never overwritten.
       ExecStartPre = let
         keySeed = "/var/lib/subduction/key-seed";
         script = pkgs.writeShellScript "ensure-subduction-key" ''
@@ -426,6 +425,26 @@
       MemoryMax  = "6G";
       ManagedOOMMemoryPressure = "auto";
       OOMScoreAdjust = 500;
+    };
+
+    systemd.services.grafana-secret-key = {
+      description = "Generate Grafana secret_key on first boot";
+      before      = [ "grafana.service" ];
+      requiredBy  = [ "grafana.service" ];
+      path        = [ pkgs.coreutils ];
+      serviceConfig = {
+        Type            = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        keyFile=/var/lib/grafana/secret_key
+        if [ ! -e "$keyFile" ]; then
+          install -d -m 0700 -o grafana -g grafana /var/lib/grafana
+          ( umask 077; head -c 32 /dev/urandom | base64 -w0 | tr -d '\n' > "$keyFile" )
+          chmod 0400 "$keyFile"
+          chown grafana:grafana "$keyFile"
+        fi
+      '';
     };
 
     # Dedicated slice for SSH so its memory floor can never be consumed by a
