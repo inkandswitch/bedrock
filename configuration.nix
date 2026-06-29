@@ -131,9 +131,11 @@
     };
   in {
     networking.hostName = hostname;
+    networking.nftables.enable = true;
     networking.firewall = {
       enable = true;
       allowedTCPPorts = [ 22 80 443 ];
+      logRefusedConnections = false;
     };
 
     time.timeZone      = "UTC";
