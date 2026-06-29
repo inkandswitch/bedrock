@@ -224,18 +224,13 @@
           socket           = "127.0.0.1:8080";
           keyFile          = "/var/lib/subduction/key-seed";
           maxMessageSize   = 104857600; # 100 MiB
-          maxResidentTrees = 32768;     # 2^15; LRU-evict beyond this to bound the working set
+          maxResidentTrees = 8192;      # 2^13; LRU cap sized for the 8 GiB host
           enableMetrics    = true;
           metricsPort      = 9090;
           adminAddr        = "127.0.0.1:9091";
           auth             = "open";
-
-          # JSON logs so Alloy can extract a `level` field for Loki — the
-          # Grafana "Log Rate by Level" panel filters on that label. Set the
-          # level through the module option (not a raw `Environment=` override,
-          # which would collide with the module's own RUST_LOG setting).
-          logFormat = "json";
-          logLevel  = "subduction=info";
+          logFormat        = "json";
+          logLevel         = "subduction=info";
         };
 
         grafana.provisionDashboard = true;
@@ -423,20 +418,11 @@
         '';
       in "+${script}";
 
-      # Subduction syncs many sedimentrees concurrently; raise fd limit to
-      # avoid "Too many open files" under heavy publish-all workloads.
       LimitNOFILE = 1048576;
-      # NB: RUST_LOG / log format are set via services.subduction.server
-      # (logLevel / logFormat) above, not here — overriding `Environment`
-      # in this block would collide with the module's own RUST_LOG setting.
 
-      # Subduction is deliberately left *uncapped* so legitimate heavy syncs
-      # are never OOM-killed by a guessed ceiling.  Instead we guarantee a
-      # memory floor for SSH (see ssh.slice below) and let systemd-oomd shed
-      # the heaviest cgroup under pressure.  Mark Subduction as the preferred
-      # victim
-      # (Restart=on-failure from the upstream module revives it).
-      ManagedOOMMemoryPressure = "kill";
+      MemoryHigh = "5G";
+      MemoryMax  = "6G";
+      ManagedOOMMemoryPressure = "auto";
       OOMScoreAdjust = 500;
     };
 
@@ -445,7 +431,7 @@
     # *hard* reservation: the kernel reclaims and OOM-kills other cgroups
     # before ever reclaiming below this floor, so we can always log in --
     # even at ~100% RAM.  This is the direct fix for the 99.5%-RAM lockout,
-    # and it lets us leave Subduction uncapped.
+    # and complements Subduction's own MemoryHigh/MemoryMax caps above.
     systemd.slices.ssh.sliceConfig = {
       MemoryAccounting = true;
       MemoryMin = "768M";
@@ -455,9 +441,11 @@
     # Userspace early-OOM killer.  The in-kernel OOM killer acts late and
     # picks victims heuristically (it can kill sshd).  systemd-oomd watches
     # cgroup memory-pressure (PSI) and acts *early*, killing the offending
-    # cgroup before the box wedges.  Combined with ManagedOOMMemoryPressure
-    # = "kill" on Subduction above, the heavy service is the one that dies --
-    # while the ssh.slice MemoryMin floor keeps administrative access alive.
+    # cgroup before the box wedges.  Subduction now bounds itself via the
+    # MemoryHigh/MemoryMax caps above and stays the preferred victim of any
+    # *global* OOM via OOMScoreAdjust=500, so oomd is kept as a system-wide
+    # early-OOM safety net; the ssh.slice MemoryMin floor keeps admin access
+    # alive.
     systemd.oomd = {
       enable = true;
       enableRootSlice = true;
