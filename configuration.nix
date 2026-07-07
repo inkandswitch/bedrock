@@ -226,6 +226,9 @@
           serviceName      = publicHostname;
           socket           = "127.0.0.1:8080";
           keyFile          = "/var/lib/subduction/key-seed";
+          # Sync round-trips legitimately run tens of seconds under load;
+          # the 5s module default times out requests that would succeed.
+          timeout          = 30;
           maxMessageSize   = 104857600; # 100 MiB
           # 2^15; a cap below the subscribed working set causes cache-miss
           # hydration storms on cold-tree syncs.
