@@ -227,7 +227,9 @@
           socket           = "127.0.0.1:8080";
           keyFile          = "/var/lib/subduction/key-seed";
           maxMessageSize   = 104857600; # 100 MiB
-          maxResidentTrees = 8192;      # 2^13; LRU cap sized for the 8 GiB host
+          # 2^15; a cap below the subscribed working set causes cache-miss
+          # hydration storms on cold-tree syncs.
+          maxResidentTrees = 32768;
           enableMetrics    = true;
           metricsPort      = 9090;
           adminAddr        = "127.0.0.1:9091";
@@ -421,8 +423,11 @@
 
       LimitNOFILE = 1048576;
 
-      MemoryHigh = "5G";
-      MemoryMax  = "6G";
+      # Leave room for the OS, observability stack, and enough page cache to
+      # hold the redb file.  MemoryHigh throttles allocations once crossed,
+      # so it must sit well above steady-state RSS.
+      MemoryHigh = "11G";
+      MemoryMax  = "13G";
       ManagedOOMMemoryPressure = "auto";
       OOMScoreAdjust = 500;
     };
@@ -477,8 +482,9 @@
     # Compressed RAM swap as a cushion for brief allocation spikes.  No disk
     # swap (the droplet has only an ext4 root); zram trades a little CPU to
     # compress cold pages and gives systemd-oomd clearer pressure signals to
-    # act on before memory is truly exhausted.  Kept modest so the backing
-    # store does not itself contend heavily for the 8 GiB of physical RAM.
+    # act on before memory is truly exhausted.  Percentage-based so it
+    # scales with the host; kept modest so the backing store does not
+    # itself contend for physical RAM.
     zramSwap = {
       enable = true;
       algorithm = "zstd";
