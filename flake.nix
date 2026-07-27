@@ -2,17 +2,17 @@
   description = "bedrock — DigitalOcean NixOS droplet with Subduction sync server";
 
   inputs = {
-    command-utils.url = "git+https://codeberg.org/expede/nix-command-utils";
+    command-utils.url = "git+https://tangled.org/expede.wtf/nix-command-utils";
 
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
     subduction.url = "github:inkandswitch/subduction";
     subduction.inputs.nixpkgs.follows = "nixpkgs";
