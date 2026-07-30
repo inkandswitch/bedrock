@@ -31,11 +31,11 @@
         "rev": "eba91ae4f4a48eedab31777ed817d3c593cee7a8",
         "revCount": 6,
         "type": "git",
-        "url": "https://codeberg.org/expede/nix-command-utils"
+        "url": "https://tangled.org/expede.wtf/nix-command-utils"
       },
       "original": {
         "type": "git",
-        "url": "https://codeberg.org/expede/nix-command-utils"
+        "url": "https://tangled.org/expede.wtf/nix-command-utils"
       }
     },
     "disko": {
@@ -151,11 +151,11 @@
     },
     "nixos-unstable": {
       "locked": {
-        "lastModified": 1783522079,
-        "narHash": "sha256-esY8Y5zEnqfTbhhWh8abFTviLCjIxE8N9mkx0R5mUxI=",
-        "rev": "1e94a0307f544377e2f2332daa7fca2833a1adc3",
+        "lastModified": 1785307242,
+        "narHash": "sha256-of9OQuw0E5/6yd7ab4ue7uVYoXT8+pTfKhCfRApzuco=",
+        "rev": "255d738cbacb7f30ac8629e091538c4382841ac5",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable-small/nixos-26.11pre1031291.1e94a0307f54/nixexprs.tar.xz"
+        "url": "https://releases.nixos.org/nixos/unstable-small/nixos-26.11pre1043549.255d738cbacb/nixexprs.tar.xz"
       },
       "original": {
         "id": "nixpkgs",
@@ -178,28 +178,13 @@
         "type": "indirect"
       }
     },
-    "nixpkgs-grafana": {
-      "locked": {
-        "lastModified": 1767313136,
-        "narHash": "sha256-16KkgfdYqjaeRGBaYsNrhPRRENs0qzkQVUooNHtoy2w=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
-        "type": "github"
-      },
-      "original": {
-        "id": "nixpkgs",
-        "ref": "nixos-25.05",
-        "type": "indirect"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1785104993,
-        "narHash": "sha256-eKbrvPoAOFutbYMdbB3r5EQVmFxKv24iKqHPPUXA0gM=",
+        "lastModified": 1785386831,
+        "narHash": "sha256-sPS3CaXH8RAT3FZRuy4VcV47iuYIWMMfa0GbyJKC3o4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "8623c4c20aa4ca2f5fb81510d2944066c3fb0d96",
+        "rev": "21ea275a7c46aef9d4d6ddc962e6d562e9d94183",
         "type": "github"
       },
       "original": {
@@ -243,11 +228,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1783488441,
-        "narHash": "sha256-jmWf+H3iC/0z7/mmvTovaJx1E/LME1QyHkyk+AFfJPk=",
+        "lastModified": 1785302874,
+        "narHash": "sha256-fpKEww3TJoo1ANHO2q918ei+ayOrp0YEQAO1DuBLOB4=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "7dc3a177a239ed879c5581a80f6dc246c7e102f1",
+        "rev": "b99d48435bc3e34309d2c7ae6f7d45e77a156c38",
         "type": "github"
       },
       "original": {
@@ -264,16 +249,15 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "nixpkgs-grafana": "nixpkgs-grafana",
         "rust-overlay": "rust-overlay",
         "wasm-bodge-src": "wasm-bodge-src"
       },
       "locked": {
-        "lastModified": 1783570870,
-        "narHash": "sha256-mVeCNevFp//Gpt6BD9Gn5aLcBOaDH6Uky22d5J0sa2Q=",
+        "lastModified": 1785445228,
+        "narHash": "sha256-DSiX0dXTjIteL+QYkembyq+463K4UAjUGzOo5dOQnrs=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "0ddf846d2f57903e189daad5464a16046a1d695d",
+        "rev": "5f8f3b8bb701b999b014af591c8bbac2d067ac80",
         "type": "github"
       },
       "original": {
@@ -344,11 +328,11 @@
     },
     "unstable": {
       "locked": {
-        "lastModified": 1783279667,
-        "narHash": "sha256-/NAkDSsve+GNM0Bt6tleJdCGfsTlK89nPjkVOzZMo0s=",
+        "lastModified": 1785301185,
+        "narHash": "sha256-eoS3KQTO0aPWXZvIaRbRAzSSHW3l5wdMFXtT1ISfoKA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f205b5574fd0cb7da5b702a2da51507b7f4fdd1b",
+        "rev": "9bc02893134c733dd85de46ee4fb2fac696b5529",
         "type": "github"
       },
       "original": {
@@ -361,15 +345,16 @@
     "wasm-bodge-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1781614223,
-        "narHash": "sha256-KZipWAFr9Dg6JyVNULRr/o33llxjd68Rphh/THKLK4s=",
+        "lastModified": 1785431803,
+        "narHash": "sha256-nvUPGz/AprP0GwT1T5Rz6JM+uYmsXQo/shJAioi7Lkk=",
         "owner": "alexjg",
         "repo": "wasm-bodge",
-        "rev": "2700e4b60ccfd346bdace2b3af78141a1a9511e8",
+        "rev": "01a7b73edc8bddd74ef00ff5cea58ce2a6938945",
         "type": "github"
       },
       "original": {
         "owner": "alexjg",
+        "ref": "v0.4.0",
         "repo": "wasm-bodge",
         "type": "github"
       }

@@ -226,8 +226,7 @@
           serviceName      = publicHostname;
           socket           = "127.0.0.1:8080";
           keyFile          = "/var/lib/subduction/key-seed";
-          # Sync round-trips legitimately run tens of seconds under load;
-          # the 5s module default times out requests that would succeed.
+          longpoll         = false;
           timeout          = 30;
           maxMessageSize   = 104857600; # 100 MiB
           # 2^15; a cap below the subscribed working set causes cache-miss
@@ -256,6 +255,26 @@
             labels.instance = "local";
           }];
         }];
+
+        rules = [''
+          groups:
+            - name: subduction
+              rules:
+                - alert: SubductionDispatchStalled
+                  expr: >-
+                    rate(subduction_dispatch_completed_total[5m]) == 0
+                    and subduction_connections_active > 0
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: "Subduction dispatch engine stalled"
+                    description: >-
+                      Dispatch has completed zero work for ~10m while peers
+                      are connected — the wedged-engine incident signature
+                      (frozen dispatch_inflight / mux_pending). Inspect the
+                      dashboard; restarting subduction.service recovers.
+        ''];
       };
 
       loki = {
