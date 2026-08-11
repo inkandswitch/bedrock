@@ -196,6 +196,13 @@
         enable = true;
         email  = "hello@brooklynzelenka.com";
 
+        # `log` enables per-site access logs (JSON → stderr → journald →
+        # Loki via the existing Alloy pipeline, 14-day retention). A
+        # WebSocket upgrade logs once per connection with `remote_ip`,
+        # which joined against subduction's "adding connection from peer"
+        # line (±1s in Loki) maps peer IDs to source addresses — the
+        # capability we lacked when tracing the corrupt-blob client.
+        #
         # `flush_interval -1` puts Caddy into low-latency mode for
         # streamed responses (WebSocket upgrades, SSE, etc.) — it
         # disables response buffering and flushes immediately, which
@@ -209,13 +216,23 @@
         # "peer X disconnected: sender task stopped" cascade. The
         # 5-minute grace gives clients a chance to drain naturally.
         virtualHosts.${publicHostname}.extraConfig = ''
+          log {
+            output stderr
+            format json
+          }
           reverse_proxy localhost:8080 {
             flush_interval -1
             stream_close_delay 5m
           }
         '';
 
+        # Access logs double as the only audit trail for the (currently
+        # unauthenticated) dashboard; see FIXME on Grafana auth upstream.
         virtualHosts."dashboard.${publicHostname}".extraConfig = ''
+          log {
+            output stderr
+            format json
+          }
           reverse_proxy localhost:3939
         '';
       };
@@ -262,7 +279,8 @@
               rules:
                 - alert: SubductionDispatchStalled
                   expr: >-
-                    rate(subduction_dispatch_completed_total[5m]) == 0
+                    sum by (instance, job)
+                      (rate(subduction_dispatch_completed_total[5m])) == 0
                     and subduction_connections_active > 0
                   for: 5m
                   labels:

@@ -193,6 +193,33 @@ parses that JSON and promotes `level` to a Loki stream label, which the Grafana
 panel is empty, check that the server still emits JSON and that the Alloy stage
 is present.
 
+### Mapping a peer ID to a source IP
+
+Subduction sits behind Caddy on loopback, so its own logs only ever show
+`127.0.0.1`. To find out _whose machine_ a peer ID belongs to:
+
+1. Caddy writes per-vhost access logs to
+   `/var/log/caddy/access-subduction.sync.inkandswitch.com.log` (JSON, root
+   readable). A WebSocket connection is logged **when it closes**, with `ts`
+   (completion time), `duration`, `request.client_ip`, and the `User-Agent`.
+   The connection's *start* is `ts - duration`.
+2. Get the peer's connection timestamps from subduction's logs
+   (`"adding connection from peer"` lines — journal or Loki).
+3. Join the two on start time (±2 s). One matching timestamp is suggestive;
+   dozens across days is conclusive.
+
+```sh
+# WS entries with computed start time, client IP, and user agent:
+sudo grep -i websocket /var/log/caddy/access-subduction.sync.inkandswitch.com.log \
+  | jq -r '[(.ts - .duration), .request.client_ip, .request.headers["User-Agent"][0]] | @tsv'
+```
+
+Newer deployments make both steps easier: Caddy access logs are also mirrored
+to stderr → journald → Loki (queryable next to subduction's logs), and
+subduction ≥0.17 logs `forwarded_for` directly on its
+`"WebSocket handshake complete"` line, pairing peer ID and client IP in a
+single log entry with no join needed.
+
 ## Inspecting on-disk state
 
 State lives under `/var/lib/subduction/`. Trees use a **sharded layout**:
