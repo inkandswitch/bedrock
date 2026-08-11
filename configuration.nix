@@ -198,10 +198,13 @@
 
         # `log` enables per-site access logs (JSON → stderr → journald →
         # Loki via the existing Alloy pipeline, 14-day retention). A
-        # WebSocket upgrade logs once per connection with `remote_ip`,
-        # which joined against subduction's "adding connection from peer"
-        # line (±1s in Loki) maps peer IDs to source addresses — the
-        # capability we lacked when tracing the corrupt-blob client.
+        # WebSocket connection logs one entry (at close) with
+        # `request.client_ip`, which joined against subduction's "adding
+        # connection from peer" line (±2s in Loki) maps peer IDs to source
+        # addresses — the capability we lacked when tracing the
+        # corrupt-blob client. Credential headers (`Cookie`,
+        # `Authorization`, etc.) are REDACTED by Caddy unless the
+        # `log_credentials` global is enabled, which we do not set.
         #
         # `flush_interval -1` puts Caddy into low-latency mode for
         # streamed responses (WebSocket upgrades, SSE, etc.) — it

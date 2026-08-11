@@ -200,9 +200,11 @@ Subduction sits behind Caddy on loopback, so its own logs only ever show
 
 1. Caddy writes per-vhost access logs to
    `/var/log/caddy/access-subduction.sync.inkandswitch.com.log` (JSON, root
-   readable). A WebSocket connection is logged **when it closes**, with `ts`
-   (completion time), `duration`, `request.client_ip`, and the `User-Agent`.
-   The connection's *start* is `ts - duration`.
+   readable — this file logger is the NixOS module's default and coexists
+   with the stderr → Loki mirror configured in `configuration.nix`). A
+   WebSocket connection is logged **when it closes**, with `ts` (completion
+   time), `duration`, `request.client_ip`, and the `User-Agent`. The
+   connection's *start* is `ts - duration`.
 2. Get the peer's connection timestamps from subduction's logs
    (`"adding connection from peer"` lines — journal or Loki).
 3. Join the two on start time (±2 s). One matching timestamp is suggestive;
