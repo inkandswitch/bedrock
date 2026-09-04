@@ -1,7 +1,7 @@
 # Minimal home-manager configuration for a headless server.
 #
 # Per-user values are passed in via `_module.args` on each user's
-# home-manager submodule (set in configuration.nix).  We can't use the
+# home-manager submodule (set in common.nix).  We can't use the
 # global `home-manager.extraSpecialArgs` for these because it's shared
 # across every user.
 #
@@ -10,14 +10,16 @@
 #   fullName : Git author name           (e.g. "Brooklyn Zelenka")
 #   email    : Git author email
 #   shell    : shell package             (e.g. pkgs.fish, pkgs.zsh, pkgs.bash)
-{ pkgs, username, fullName, email, shell, ... }:
+#
+# `stateVersion` arrives via `home-manager.extraSpecialArgs` (same for every
+# user on a host; mirrors `system.stateVersion`).
+{ pkgs, username, fullName, email, shell, stateVersion, ... }:
 {
   home = {
-    inherit username;
+    inherit username stateVersion;
     homeDirectory = "/home/${username}";
-    stateVersion  = "25.11";
 
-    # System-wide investigation tooling lives in configuration.nix's
+    # System-wide investigation tooling lives in common.nix's
     # environment.systemPackages so it works under sudo and on root
     # sessions.  Only per-user shell conveniences belong here.
     packages = with pkgs; [

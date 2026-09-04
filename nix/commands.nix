@@ -1,30 +1,52 @@
-# Bedrock dev-shell commands.
+# Dev-shell commands.
 #
-# Most commands target the remote bedrock server.  The SSH destination is
-# whatever `$BEDROCK_HOST` is set to, falling back to the SSH config alias
-# `bedrock` (see `Host bedrock` block in `~/.ssh/config`).  Override with:
+# Most commands target a remote droplet.  Two environment variables select
+# which one:
 #
-#     export BEDROCK_HOST=expede@subduction.sync.inkandswitch.com
+#   BEDROCK_TARGET  flake attribute / NixOS hostname (`bedrock`, `coln-sync`).
+#                   Default: `bedrock`.  Drives `--flake .#$TARGET` and the
+#                   public-URL lookups.
+#   BEDROCK_HOST    SSH destination.  Default: same as $TARGET, i.e. an
+#                   alias in `~/.ssh/config` (`Host bedrock`, `Host coln-sync`).
+#
+#     export BEDROCK_TARGET=coln-sync
+#     export BEDROCK_HOST=expede@coln.sync.inkandswitch.com   # optional
 #
 # Run `menu` inside `nix develop` to list every command.
 {
   pkgs,
   system,
   cmd,
+  hostNames,
 }: let
-  defaultHost = "bedrock";
+  defaultTarget = "bedrock";
 
   # Pinned tool paths for reproducibility.
   coreutils     = pkgs.coreutils;
   curl          = "${pkgs.curl}/bin/curl";
+  nix           = "${pkgs.nix}/bin/nix";
   nixos-rebuild = "${pkgs.nixos-rebuild}/bin/nixos-rebuild";
   ripgrep       = "${pkgs.ripgrep}/bin/rg";
   ssh           = "${pkgs.openssh}/bin/ssh";
 
-  # Common prologue: resolve $HOST from BEDROCK_HOST or default alias.
+  # Common prologue: resolve $TARGET (validated against the flake's hosts)
+  # and $HOST (SSH destination).
   resolveHost = ''
-    HOST="''${BEDROCK_HOST:-${defaultHost}}"
+    TARGET="''${BEDROCK_TARGET:-${defaultTarget}}"
+    case "$TARGET" in
+      ${lib.concatStringsSep "|" hostNames}) ;;
+      *) echo "BEDROCK_TARGET=$TARGET is not one of: ${lib.concatStringsSep " " hostNames}" >&2; exit 2 ;;
+    esac
+    HOST="''${BEDROCK_HOST:-$TARGET}"
   '';
+
+  # Public DNS name of $TARGET, read from the host's `bedrock.publicHostname`
+  # so the dev shell never hardcodes a URL.
+  resolvePublic = ''
+    PUBLIC="$(${nix} eval --raw "''${BEDROCK_ROOT:-.}#nixosConfigurations.$TARGET.config.bedrock.publicHostname")"
+  '';
+
+  inherit (pkgs) lib;
 
   # ── Logs ────────────────────────────────────────────────────────────
   logs = {
@@ -87,7 +109,7 @@
       ${ssh} "$HOST" 'sudo systemctl stop subduction'
     '';
 
-    "service:units" = cmd "Show status of every bedrock-owned service" ''
+    "service:units" = cmd "Show status of every service the target owns" ''
       ${resolveHost}
       ${ssh} "$HOST" 'systemctl is-active subduction caddy prometheus loki grafana alloy tailscaled sshd; systemctl --failed --no-pager'
     '';
@@ -97,9 +119,10 @@
   health = {
     "health" = cmd "Run the full health check (public + remote + local sockets)" ''
       ${resolveHost}
+      ${resolvePublic}
 
-      echo "===> Public HTTPS endpoint"
-      ${curl} -sI https://subduction.sync.inkandswitch.com | ${coreutils}/bin/head -1 || echo "  (unreachable)"
+      echo "===> Public HTTPS endpoint ($PUBLIC)"
+      ${curl} -sI "https://$PUBLIC" | ${coreutils}/bin/head -1 || echo "  (unreachable)"
       echo ""
 
       echo "===> Remote services"
@@ -117,7 +140,9 @@
     '';
 
     "health:http" = cmd "Probe the public HTTPS endpoint" ''
-      ${curl} -sI https://subduction.sync.inkandswitch.com
+      ${resolveHost}
+      ${resolvePublic}
+      ${curl} -sI "https://$PUBLIC"
     '';
   };
 
@@ -125,7 +150,7 @@
   deploy = {
     "deploy" = cmd "Build on remote, activate now, update bootloader (the standard deploy)" ''
       ${resolveHost}
-      ${nixos-rebuild} switch --flake .#bedrock \
+      ${nixos-rebuild} switch --flake ".#$TARGET" \
         --target-host "$HOST" \
         --build-host  "$HOST" \
         --sudo
@@ -133,7 +158,7 @@
 
     "deploy:dry" = cmd "Build on remote, show what activation would do, then stop" ''
       ${resolveHost}
-      ${nixos-rebuild} dry-activate --flake .#bedrock \
+      ${nixos-rebuild} dry-activate --flake ".#$TARGET" \
         --target-host "$HOST" \
         --build-host  "$HOST" \
         --sudo
@@ -141,7 +166,7 @@
 
     "deploy:test" = cmd "Build + activate now, do not update bootloader (reverts on reboot)" ''
       ${resolveHost}
-      ${nixos-rebuild} test --flake .#bedrock \
+      ${nixos-rebuild} test --flake ".#$TARGET" \
         --target-host "$HOST" \
         --build-host  "$HOST" \
         --sudo
@@ -185,12 +210,12 @@
 
   # ── Shell / users ───────────────────────────────────────────────────
   shell = {
-    "shell" = cmd "Open an interactive SSH session on bedrock" ''
+    "shell" = cmd "Open an interactive SSH session on the target" ''
       ${resolveHost}
       ${ssh} "$HOST"
     '';
 
-    "users" = cmd "List human accounts (UID >= 1000) on bedrock" ''
+    "users" = cmd "List human accounts (UID >= 1000) on the target" ''
       ${resolveHost}
       ${ssh} "$HOST" "awk -F: '\$3 >= 1000 && \$3 < 65534 {printf \"%-12s %-20s %s\\n\", \$1, \$5, \$7}' /etc/passwd"
     '';
@@ -198,7 +223,7 @@
 
   # ── Storage migration ───────────────────────────────────────────────
   storage = {
-    "storage:migrate-trees" = cmd "Migrate trees/ from flat to sharded layout on bedrock (stops Subduction)" ''
+    "storage:migrate-trees" = cmd "Migrate trees/ from flat to sharded layout on the target (stops Subduction)" ''
       ${resolveHost}
       # Delegates to the on-server menu command, which holds the script path
       # pinned to the running system's Subduction revision.  Pass --dry-run

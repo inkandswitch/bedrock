@@ -1,10 +1,14 @@
 # Bedrock Cookbook
 
-Recipes for common admin tasks on bedrock. Most recipes assume you have an account in `wheel` (any of the users declared in [`configuration.nix`](./configuration.nix)) and are SSHed in:
+Recipes for common admin tasks on the Subduction hosts. Most recipes assume you have an account in `wheel` (any of the users declared in [`modules/accounts.nix`](./modules/accounts.nix)) and are SSHed in:
 
 ```sh
-ssh <USERNAME>@subduction.sync.inkandswitch.com
+ssh <USERNAME>@subduction.sync.inkandswitch.com   # bedrock (production)
+ssh <USERNAME>@coln.sync.inkandswitch.com         # coln-sync (staging)
 ```
+
+> [!NOTE]
+> Examples below use `bedrock` / `.#bedrock`. Every recipe applies verbatim to `coln-sync` — substitute the host name in the flake attribute and SSH destination, or set `BEDROCK_TARGET=coln-sync` in the dev shell.
 
 For deploying changes from your laptop, see the ["Deploying" section in README.md](./README.md#deploying) and the ["Rebuild and activate" section below](#2-rebuild-and-activate).
 
@@ -26,11 +30,14 @@ nix develop      # prints the menu on entry
 menu             # re-print the menu inside the shell
 ```
 
-The wrappers SSH to `bedrock` (per your `~/.ssh/config`). Override with `BEDROCK_HOST`:
+Two variables pick the host. `BEDROCK_TARGET` is the flake attribute (`bedrock` by default, or `coln-sync`) and drives `--flake .#$TARGET` plus the public-URL health probes; `BEDROCK_HOST` is the SSH destination and defaults to the same name, i.e. an alias in your `~/.ssh/config`:
 
 ```sh
-export BEDROCK_HOST=expede@subduction.sync.inkandswitch.com
+export BEDROCK_TARGET=coln-sync                           # staging
+export BEDROCK_HOST=expede@coln.sync.inkandswitch.com     # only if you have no `Host coln-sync` alias
 ```
+
+The shell prints the active target on entry. An unknown `BEDROCK_TARGET` fails fast with the list of valid hosts.
 
 This context adds laptop-only commands the server doesn't have:
 

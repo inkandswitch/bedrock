@@ -1,5 +1,5 @@
 {
-  description = "bedrock — DigitalOcean NixOS droplet with Subduction sync server";
+  description = "Ink & Switch Subduction sync servers on DigitalOcean (bedrock, coln-sync)";
 
   inputs = {
     command-utils.url = "git+https://tangled.org/expede.wtf/nix-command-utils";
@@ -31,52 +31,44 @@
     unstable,
     ...
   }: let
-    hostname      = "bedrock";
-    adminUsername = "expede";
-    targetSystem  = "x86_64-linux";
+    targetSystem = "x86_64-linux";
 
-    targetPkgs   = import nixpkgs { system = targetSystem; };
+    # One entry per droplet.  The attribute name is both the NixOS hostname
+    # and the flake attribute (`nixos-rebuild --flake .#<name>`); the value
+    # is the host module that sets the `bedrock.*` options.
+    hosts = {
+      bedrock   = ./hosts/bedrock.nix;
+      coln-sync = ./hosts/coln-sync.nix;
+    };
+
     unstablePkgs = import unstable {
       system = targetSystem;
       config.allowUnfree = true;
     };
 
-    # On-server command bundle.  Same UX as the dev-shell menu, but the
-    # underlying scripts run locally (no SSH).  Added to
-    # `environment.systemPackages` in configuration.nix so every account on
-    # bedrock gets `menu`, `logs:tail`, `deploy:gens`, … in their PATH.
-    bedrockMenu = command-utils.commands.${targetSystem} [
-      {
-        commands = import ./nix/server-commands.nix {
-          pkgs       = targetPkgs;
-          system     = targetSystem;
-          cmd        = command-utils.cmd.${targetSystem};
-          subduction = subduction;
+    mkHost = hostname: hostModule:
+      nixpkgs.lib.nixosSystem {
+        system = targetSystem;
+
+        specialArgs = {
+          inherit hostname;
+          unstable = unstablePkgs;
+          # Raw flake inputs the shared modules need at eval time (the
+          # on-server command menu is built from them in common.nix).
+          inputs = { inherit command-utils subduction; };
         };
-        packages = [];
-      }
-    ];
-  in {
-    nixosConfigurations.${hostname} = nixpkgs.lib.nixosSystem {
-      system = targetSystem;
 
-      specialArgs = {
-        inherit hostname adminUsername bedrockMenu;
-        unstable = unstablePkgs;
+        modules = [
+          disko.nixosModules.disko
+          home-manager.nixosModules.home-manager
+          subduction.nixosModules.default
+
+          ./modules/common.nix
+          hostModule
+        ];
       };
-
-      modules = [
-        disko.nixosModules.disko
-        home-manager.nixosModules.home-manager
-        subduction.nixosModules.default
-
-        ./configuration.nix
-        ./digitalocean.nix
-        ./disk-config.nix
-        ./hardware-configuration.nix
-        ./nix.nix
-      ];
-    };
+  in {
+    nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
   } //
   flake-utils.lib.eachDefaultSystem (system: let
     pkgs = import nixpkgs { inherit system; };
@@ -84,6 +76,7 @@
 
     projectCommands = import ./nix/commands.nix {
       inherit pkgs system cmd;
+      hostNames = builtins.attrNames hosts;
     };
 
     command_menu = command-utils.commands.${system} [
@@ -106,6 +99,7 @@
 
       shellHook = ''
         export BEDROCK_ROOT="$(pwd)"
+        echo "Target: ''${BEDROCK_TARGET:-bedrock}  (set BEDROCK_TARGET=coln-sync to switch)"
         menu
       '';
     };
