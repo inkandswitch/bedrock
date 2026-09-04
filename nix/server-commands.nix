@@ -1,6 +1,6 @@
-# Bedrock on-server commands.
+# On-server commands.
 #
-# CLI wrappers available system-wide on bedrock itself.  Mirrored from the
+# CLI wrappers available system-wide on the host itself.  Mirrored from the
 # laptop-side dev-shell menu (see `nix/commands.nix`) but implemented
 # locally — no SSH, no remote round-trip — so they're usable from any login
 # session (regular SSH, Tailscale, or the DigitalOcean web console).
@@ -15,6 +15,7 @@
   system,
   cmd,
   subduction,
+  publicHostname,
 }: let
   awk        = "${pkgs.gawk}/bin/awk";
   bash       = "${pkgs.bash}/bin/bash";
@@ -77,7 +78,7 @@
     "service:stop" = cmd "Stop Subduction"
       "${sudo} ${systemctl} stop subduction";
 
-    "service:units" = cmd "Show status of every bedrock-owned service" ''
+    "service:units" = cmd "Show status of every service this host owns" ''
       for u in subduction caddy prometheus loki grafana alloy tailscaled sshd; do
         printf "  %-15s %s\n" "$u" "$(${systemctl} is-active "$u" 2>/dev/null || echo failed)"
       done
@@ -91,7 +92,7 @@
   health = {
     "health" = cmd "Run the full health check (public + service status + local sockets)" ''
       echo "===> Public HTTPS endpoint"
-      ${curl} -sI https://subduction.sync.inkandswitch.com | ${coreutils}/bin/head -1 || echo "  (unreachable)"
+      ${curl} -sI https://${publicHostname} | ${coreutils}/bin/head -1 || echo "  (unreachable)"
       echo ""
 
       echo "===> Service status"
@@ -107,7 +108,7 @@
     '';
 
     "health:http" = cmd "Probe the public HTTPS endpoint"
-      "${curl} -sI https://subduction.sync.inkandswitch.com";
+      "${curl} -sI https://${publicHostname}";
   };
 
   # ── Disk / state ────────────────────────────────────────────────────
