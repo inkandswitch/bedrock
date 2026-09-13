@@ -151,11 +151,11 @@
     },
     "nixos-unstable": {
       "locked": {
-        "lastModified": 1785307242,
-        "narHash": "sha256-of9OQuw0E5/6yd7ab4ue7uVYoXT8+pTfKhCfRApzuco=",
-        "rev": "255d738cbacb7f30ac8629e091538c4382841ac5",
+        "lastModified": 1786548149,
+        "narHash": "sha256-NkfzG9ErGKyknpftAprpUFzKsr3gzgB26y+xGwpmlWY=",
+        "rev": "5df1f9ae934fe1bffbd3867a1ae2870ab22302ed",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable-small/nixos-26.11pre1043549.255d738cbacb/nixexprs.tar.xz"
+        "url": "https://releases.nixos.org/nixos/unstable-small/nixos-26.11pre1052927.5df1f9ae934f/nixexprs.tar.xz"
       },
       "original": {
         "id": "nixpkgs",
@@ -228,11 +228,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1785302874,
-        "narHash": "sha256-fpKEww3TJoo1ANHO2q918ei+ayOrp0YEQAO1DuBLOB4=",
+        "lastModified": 1786507911,
+        "narHash": "sha256-w5aZRLbiu7H6TqsYXVMdRKg0S4DRaJpxyqxx86AwxVk=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "b99d48435bc3e34309d2c7ae6f7d45e77a156c38",
+        "rev": "39db48099ad16834af7e27485a4babf9c28b3897",
         "type": "github"
       },
       "original": {
@@ -253,11 +253,11 @@
         "wasm-bodge-src": "wasm-bodge-src"
       },
       "locked": {
-        "lastModified": 1785454553,
-        "narHash": "sha256-swULjvykalKTiMM4/HTN33hD3rj5H45ygp4JVQV3+08=",
+        "lastModified": 1789283997,
+        "narHash": "sha256-7C15OQxM5KZAe/9xkcpOXkRoUZNW/Iws4XyLWTAvrDQ=",
         "owner": "inkandswitch",
         "repo": "subduction",
-        "rev": "9c0fbfd06bd499d4a8b53548788119d33af0d1ec",
+        "rev": "7a189e0297d77c1edd015f6009b986edaf3310d5",
         "type": "github"
       },
       "original": {
