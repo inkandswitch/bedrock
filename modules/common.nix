@@ -229,7 +229,6 @@
           enableMetrics    = true;
           metricsPort      = 9090;
           adminAddr        = "127.0.0.1:9091";
-          auth             = "open";
           logFormat        = "json";
           logLevel         = "subduction=info";
         };
