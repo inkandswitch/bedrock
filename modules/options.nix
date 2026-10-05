@@ -51,6 +51,16 @@ in {
     };
 
     subduction = {
+      auth = mkOption {
+        type        = types.enum [ "keyhive" "open" ];
+        example     = "keyhive";
+        description = ''
+          Subduction authorization mode (`--auth`).  Deliberately has no
+          default: this is a security boundary, so each host must choose
+          explicitly rather than inherit upstream's default.
+        '';
+      };
+
       memoryHigh = mkOption {
         type        = types.str;
         example     = "11G";

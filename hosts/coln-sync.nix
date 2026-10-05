@@ -16,6 +16,7 @@
     #   Subduction                     1.75 G high / 2.25 G max
     # zram (25%) absorbs brief spikes before systemd-oomd steps in.
     subduction = {
+      auth             = "open";
       memoryHigh       = "1750M";
       memoryMax        = "2250M";
       # Staging hosts a small working set; keep the resident cache modest so
