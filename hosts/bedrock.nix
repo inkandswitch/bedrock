@@ -9,6 +9,7 @@
     # Leave room for the OS, observability stack, and enough page cache to
     # hold the redb file.
     subduction = {
+      auth             = "keyhive";
       memoryHigh       = "11G";
       memoryMax        = "13G";
       maxResidentTrees = 32768; # 2^15
