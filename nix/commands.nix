@@ -24,6 +24,7 @@
   # Pinned tool paths for reproducibility.
   coreutils     = pkgs.coreutils;
   curl          = "${pkgs.curl}/bin/curl";
+  git           = "${pkgs.git}/bin/git";
   nix           = "${pkgs.nix}/bin/nix";
   nixos-rebuild = "${pkgs.nixos-rebuild}/bin/nixos-rebuild";
   ripgrep       = "${pkgs.ripgrep}/bin/rg";
@@ -44,6 +45,18 @@
   # so the dev shell never hardcodes a URL.
   resolvePublic = ''
     PUBLIC="$(${nix} eval --raw "''${BEDROCK_ROOT:-.}#nixosConfigurations.$TARGET.config.bedrock.publicHostname")"
+  '';
+
+  # Refuse to activate from uncommitted changes, so every deployed system
+  # corresponds to a commit. Untracked files are invisible to the flake, so
+  # only tracked changes (staged or not) count. Override with
+  # BEDROCK_ALLOW_DIRTY=1 in an emergency.
+  requireClean = ''
+    if [ -z "''${BEDROCK_ALLOW_DIRTY:-}" ] && ! ${git} diff --quiet HEAD; then
+      echo "Refusing to deploy: uncommitted changes to tracked files." >&2
+      echo "Commit first, or set BEDROCK_ALLOW_DIRTY=1 to override." >&2
+      exit 1
+    fi
   '';
 
   inherit (pkgs) lib;
@@ -150,6 +163,7 @@
   deploy = {
     "deploy" = cmd "Build on remote, activate now, update bootloader (the standard deploy)" ''
       ${resolveHost}
+      ${requireClean}
       ${nixos-rebuild} switch --flake ".#$TARGET" \
         --target-host "$HOST" \
         --build-host  "$HOST" \
@@ -166,6 +180,7 @@
 
     "deploy:test" = cmd "Build + activate now, do not update bootloader (reverts on reboot)" ''
       ${resolveHost}
+      ${requireClean}
       ${nixos-rebuild} test --flake ".#$TARGET" \
         --target-host "$HOST" \
         --build-host  "$HOST" \

@@ -69,6 +69,11 @@
       };
   in {
     nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
+
+    # `nix flake check` builds every host's system closure.
+    checks.${targetSystem} = nixpkgs.lib.mapAttrs
+      (_: host: host.config.system.build.toplevel)
+      self.nixosConfigurations;
   } //
   flake-utils.lib.eachDefaultSystem (system: let
     pkgs = import nixpkgs { inherit system; };

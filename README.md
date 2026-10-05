@@ -33,8 +33,8 @@ Caddy terminates TLS via Let's Encrypt and reverse-proxies to Subduction and Gra
 | File                                 | Purpose                                                                                          |
 |--------------------------------------|--------------------------------------------------------------------------------------------------|
 | `flake.nix`                          | Flake entry point — pins inputs; `mkHost` builds one `nixosConfiguration` per entry in `hosts`   |
-| `hosts/bedrock.nix`                  | Production: DNS, 11G/13G Subduction memory caps                                                  |
-| `hosts/coln-sync.nix`                | Staging: DNS, 4 GB-sized memory caps, extra account                                              |
+| `hosts/bedrock.nix`                  | Production: DNS, 11G/13G Subduction memory caps, `auth = "keyhive"`                              |
+| `hosts/coln-sync.nix`                | Staging: DNS, 4 GB-sized memory caps, `auth = "open"`, extra account                             |
 | `modules/options.nix`                | The `bedrock.*` option set — the _only_ things allowed to differ between hosts                    |
 | `modules/common.nix`                 | System services: Subduction, Caddy, Prometheus, Loki, Grafana Alloy, Grafana, Tailscale, OpenSSH |
 | `modules/accounts.nix`               | Shared human accounts + SSH keys                                                                 |
@@ -48,7 +48,7 @@ Caddy terminates TLS via Let's Encrypt and reverse-proxies to Subduction and Gra
 
 ### Adding a host
 
-1. Create `hosts/<name>.nix` setting `bedrock.publicHostname`, `bedrock.subduction.memoryHigh`/`memoryMax`, `bedrock.sshMemoryMin`, and `bedrock.stateVersion` (see `modules/options.nix` for the full set and defaults).
+1. Create `hosts/<name>.nix` setting `bedrock.publicHostname`, `bedrock.subduction.auth`, `bedrock.subduction.memoryHigh`/`memoryMax`, `bedrock.sshMemoryMin`, and `bedrock.stateVersion` (see `modules/options.nix` for the full set and defaults).
 2. Add `<name> = ./hosts/<name>.nix;` to `hosts` in `flake.nix`.
 3. Add a `Host <name>` alias to your `~/.ssh/config` so the dev-shell commands can reach it.
 4. Point DNS at the droplet and provision as below with `--flake .#<name>`.
@@ -85,6 +85,7 @@ nix develop
 BEDROCK_TARGET=coln-sync deploy      # defaults to bedrock when unset
 ```
 
+- `deploy` and `deploy:test` refuse to run with uncommitted changes to tracked files, so every deployed system matches a commit. Set `BEDROCK_ALLOW_DIRTY=1` to override in an emergency.
 - `--sudo` escalates the remote privileged steps via passwordless sudo (root SSH is disabled).
 - `--build-host` builds the closure on the droplet rather than locally — required when your laptop can't produce `x86_64-linux` derivations (e.g. Apple Silicon). On an `x86_64-linux` laptop you can drop it and let local Nix build the closure.
 
@@ -102,6 +103,18 @@ See [`COOKBOOK.md` § Rebuild and activate](./COOKBOOK.md#2-rebuild-and-activate
 | Grafana Alloy | —                | Ships the systemd journal to Loki                     |
 | Tailscale     | —                | Mesh VPN for admin access                             |
 | OpenSSH       | `:22`            | Key-only, root login disabled                         |
+
+### Subduction authorization
+
+Each host must set `bedrock.subduction.auth`. There is no default, so a new host fails to evaluate until it chooses:
+
+| Value     | Behaviour                                                                                   |
+|-----------|---------------------------------------------------------------------------------------------|
+| `keyhive` | Keyhive access control for keyhive-issued document IDs                                      |
+| `open`    | Allow-all storage policy; keyhive disabled                                                  |
+
+> [!WARNING]
+> Under `keyhive`, legacy document IDs (16-byte Automerge IDs, zero-padded) are still allowed without any check. Keyhive is not yet a full access-control boundary.
 
 ## Firewall
 
