@@ -3,12 +3,13 @@
 Recipes for common admin tasks on the Subduction hosts. Most recipes assume you have an account in `wheel` (any of the users declared in [`modules/accounts.nix`](./modules/accounts.nix)) and are SSHed in:
 
 ```sh
-ssh <USERNAME>@subduction.sync.inkandswitch.com   # bedrock (production)
-ssh <USERNAME>@coln.sync.inkandswitch.com         # coln-sync (staging)
+ssh <USERNAME>@subduction.sync.inkandswitch.com           # bedrock (production)
+ssh <USERNAME>@staging.subduction.sync.inkandswitch.com   # bedrock-staging (pre-release)
+ssh <USERNAME>@coln.sync.inkandswitch.com                 # coln-sync (staging)
 ```
 
 > [!NOTE]
-> Examples below use `bedrock` / `.#bedrock`. Every recipe applies verbatim to `coln-sync` — substitute the host name in the flake attribute and SSH destination, or set `BEDROCK_TARGET=coln-sync` in the dev shell.
+> Examples below use `bedrock` / `.#bedrock`. Every recipe applies verbatim to `bedrock-staging` and `coln-sync` — substitute the host name in the flake attribute and SSH destination, or set `BEDROCK_TARGET=coln-sync` in the dev shell.
 
 For deploying changes from your laptop, see the ["Deploying" section in README.md](./README.md#deploying) and the ["Rebuild and activate" section below](#2-rebuild-and-activate).
 
@@ -30,7 +31,7 @@ nix develop      # prints the menu on entry
 menu             # re-print the menu inside the shell
 ```
 
-Two variables pick the host. `BEDROCK_TARGET` is the flake attribute (`bedrock` by default, or `coln-sync`) and drives `--flake .#$TARGET` plus the public-URL health probes; `BEDROCK_HOST` is the SSH destination and defaults to the same name, i.e. an alias in your `~/.ssh/config`:
+Two variables pick the host. `BEDROCK_TARGET` is the flake attribute (`bedrock` by default, `bedrock-staging`, or `coln-sync`) and drives `--flake .#$TARGET` plus the public-URL health probes; `BEDROCK_HOST` is the SSH destination and defaults to the same name, i.e. an alias in your `~/.ssh/config`:
 
 ```sh
 export BEDROCK_TARGET=coln-sync                           # staging

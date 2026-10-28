@@ -1,5 +1,5 @@
 {
-  description = "Ink & Switch Subduction sync servers on DigitalOcean (bedrock, coln-sync)";
+  description = "Ink & Switch Subduction sync servers on DigitalOcean (bedrock, bedrock-staging, coln-sync)";
 
   inputs = {
     command-utils.url = "git+https://tangled.org/expede.wtf/nix-command-utils";
@@ -17,6 +17,11 @@
     subduction.url = "github:inkandswitch/subduction";
     subduction.inputs.nixpkgs.follows = "nixpkgs";
 
+    # Pre-release Subduction for the staging droplet.  Repoint the ref (or
+    # drop this input and use `subduction`) once the branch lands on main.
+    subduction-staging.url = "github:inkandswitch/subduction/keyline-take-2";
+    subduction-staging.inputs.nixpkgs.follows = "nixpkgs";
+
     unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
@@ -28,17 +33,20 @@
     home-manager,
     nixpkgs,
     subduction,
+    subduction-staging,
     unstable,
     ...
   }: let
     targetSystem = "x86_64-linux";
 
     # One entry per droplet.  The attribute name is both the NixOS hostname
-    # and the flake attribute (`nixos-rebuild --flake .#<name>`); the value
-    # is the host module that sets the `bedrock.*` options.
+    # and the flake attribute (`nixos-rebuild --flake .#<name>`).  `module`
+    # sets the `bedrock.*` options; `subduction` picks which Subduction flake
+    # input supplies the NixOS module, binary, and on-server scripts.
     hosts = {
-      bedrock   = ./hosts/bedrock.nix;
-      coln-sync = ./hosts/coln-sync.nix;
+      bedrock         = { module = ./hosts/bedrock.nix;         inherit subduction; };
+      bedrock-staging = { module = ./hosts/bedrock-staging.nix; subduction = subduction-staging; };
+      coln-sync       = { module = ./hosts/coln-sync.nix;       inherit subduction; };
     };
 
     unstablePkgs = import unstable {
@@ -46,7 +54,7 @@
       config.allowUnfree = true;
     };
 
-    mkHost = hostname: hostModule:
+    mkHost = hostname: { module, subduction }:
       nixpkgs.lib.nixosSystem {
         system = targetSystem;
 
@@ -64,7 +72,7 @@
           subduction.nixosModules.default
 
           ./modules/common.nix
-          hostModule
+          module
         ];
       };
   in {
@@ -104,7 +112,7 @@
 
       shellHook = ''
         export BEDROCK_ROOT="$(pwd)"
-        echo "Target: ''${BEDROCK_TARGET:-bedrock}  (set BEDROCK_TARGET=coln-sync to switch)"
+        echo "Target: ''${BEDROCK_TARGET:-bedrock}  (set BEDROCK_TARGET=bedrock-staging|coln-sync to switch)"
         menu
       '';
     };
