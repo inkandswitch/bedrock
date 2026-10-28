@@ -2,12 +2,13 @@
 
 NixOS configuration for DigitalOcean droplets running a [Subduction](https://github.com/inkandswitch/subduction) sync server with full observability. One flake, several hosts:
 
-| Host        | Role                       | Public DNS                         | Droplet                     |
-|-------------|----------------------------|------------------------------------|-----------------------------|
-| `bedrock`   | Production                 | `subduction.sync.inkandswitch.com` | 16 GB RAM                   |
-| `coln-sync` | Staging (Coln project)     | `coln.sync.inkandswitch.com`       | 2 vCPU, 4 GB RAM, 80 GB disk |
+| Host              | Role                   | Public DNS                                 | Droplet                       |
+|-------------------|------------------------|--------------------------------------------|-------------------------------|
+| `bedrock`         | Production             | `subduction.sync.inkandswitch.com`         | 16 GB RAM                     |
+| `bedrock-staging` | Staging (pre-release)  | `staging.subduction.sync.inkandswitch.com` | 4 vCPU, 8 GB RAM, 160 GB disk |
+| `coln-sync`       | Staging (Coln project) | `coln.sync.inkandswitch.com`               | 2 vCPU, 4 GB RAM, 80 GB disk  |
 
-Every host runs the identical software stack from `modules/`; the per-host file in `hosts/` only sets DNS, memory caps, and any extra accounts. Grafana lives at `dashboard.<public DNS>` on each.
+Every host runs the identical software stack from `modules/`; the per-host file in `hosts/` only sets DNS, memory caps, and any extra accounts. The one exception is the Subduction build itself: `bedrock-staging` takes it from the `subduction-staging` flake input (currently the `keyline-take-2` branch) instead of `subduction`. Grafana lives at `dashboard.<public DNS>` on each.
 
 ## Architecture
 
@@ -34,6 +35,7 @@ Caddy terminates TLS via Let's Encrypt and reverse-proxies to Subduction and Gra
 |--------------------------------------|--------------------------------------------------------------------------------------------------|
 | `flake.nix`                          | Flake entry point — pins inputs; `mkHost` builds one `nixosConfiguration` per entry in `hosts`   |
 | `hosts/bedrock.nix`                  | Production: DNS, 11G/13G Subduction memory caps, `auth = "keyhive"`                              |
+| `hosts/bedrock-staging.nix`          | Pre-release staging: DNS, 8 GB-sized memory caps, `auth = "keyhive"`                             |
 | `hosts/coln-sync.nix`                | Staging: DNS, 4 GB-sized memory caps, `auth = "open"`, extra account                             |
 | `modules/options.nix`                | The `bedrock.*` option set — the _only_ things allowed to differ between hosts                    |
 | `modules/common.nix`                 | System services: Subduction, Caddy, Prometheus, Loki, Grafana Alloy, Grafana, Tailscale, OpenSSH |
@@ -49,7 +51,7 @@ Caddy terminates TLS via Let's Encrypt and reverse-proxies to Subduction and Gra
 ### Adding a host
 
 1. Create `hosts/<name>.nix` setting `bedrock.publicHostname`, `bedrock.subduction.auth`, `bedrock.subduction.memoryHigh`/`memoryMax`, `bedrock.sshMemoryMin`, and `bedrock.stateVersion` (see `modules/options.nix` for the full set and defaults).
-2. Add `<name> = ./hosts/<name>.nix;` to `hosts` in `flake.nix`.
+2. Add `<name> = { module = ./hosts/<name>.nix; inherit subduction; };` to `hosts` in `flake.nix` (point `subduction` at a different flake input to run another Subduction build).
 3. Add a `Host <name>` alias to your `~/.ssh/config` so the dev-shell commands can reach it.
 4. Point DNS at the droplet and provision as below with `--flake .#<name>`.
 
@@ -57,7 +59,7 @@ Caddy terminates TLS via Let's Encrypt and reverse-proxies to Subduction and Gra
 
 ### Initial provisioning
 
-Create a DigitalOcean droplet (Ubuntu 24.04, SSH key added), point the host's public DNS name at its IP, then provision with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere), substituting the host name (`bedrock`, `coln-sync`):
+Create a DigitalOcean droplet (Ubuntu 24.04, SSH key added), point the host's public DNS name at its IP, then provision with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere), substituting the host name (`bedrock`, `bedrock-staging`, `coln-sync`):
 
 ```bash
 nix run github:nix-community/nixos-anywhere -- \

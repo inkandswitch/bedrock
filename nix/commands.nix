@@ -3,7 +3,8 @@
 # Most commands target a remote droplet.  Two environment variables select
 # which one:
 #
-#   BEDROCK_TARGET  flake attribute / NixOS hostname (`bedrock`, `coln-sync`).
+#   BEDROCK_TARGET  flake attribute / NixOS hostname (`bedrock`, `bedrock-staging`,
+#                   `coln-sync`).
 #                   Default: `bedrock`.  Drives `--flake .#$TARGET` and the
 #                   public-URL lookups.
 #   BEDROCK_HOST    SSH destination.  Default: same as $TARGET, i.e. an
@@ -251,8 +252,8 @@
   update = {
     "update" = cmd "Update every flake input" "nix flake update";
 
-    "update:subduction" = cmd "Update just the Subduction flake input"
-      "nix flake update subduction";
+    "update:subduction" = cmd "Update the Subduction flake inputs (prod + staging)"
+      "nix flake update subduction subduction-staging";
 
     "update:nixpkgs" = cmd "Update just the nixpkgs + unstable inputs"
       "nix flake update nixpkgs unstable";
